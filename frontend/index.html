@@ -1,0 +1,947 @@
+<!-- This file is a part of Statrix -->
+<!-- Coding : Priyanshu Dey [@HellFireDevil18] -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{STATUS_PAGE_TITLE}}</title>
+    <link rel="icon" type="image/png" href="/static/images/favicon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/images/logo.png">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/public.css">
+    <link rel="stylesheet" href="/static/css/status-page.css">
+</head>
+
+<body>
+    <div class="container">
+        <!-- Logo Header -->
+        <div class="logo-header">
+            <a href="https://t.me/HellFireDevil" target="_blank" rel="noopener noreferrer" title="Telegram">
+                <img src="{{STATUS_LOGO_URL}}" alt="Statrix">
+            </a>
+        </div>
+
+        <!-- Title Header -->
+        <div class="title-header">
+            <h1 id="page-title">{{STATUS_PAGE_TITLE}}</h1>
+        </div>
+
+        <!-- Main Status Box -->
+        <div class="status-box">
+            <!-- Toolbar -->
+            <div class="toolbar">
+                <div class="toolbar-left">
+                    <div class="view-toggle">
+                        <button type="button" class="active" onclick="setViewMode('table')" title="Table View">
+                            <i class="fas fa-th-list"></i>
+                        </button>
+                        <button type="button" onclick="setViewMode('grid')" title="Grid View">
+                            <i class="fas fa-th"></i>
+                        </button>
+                    </div>
+                    <div class="search-box">
+                        <input type="text" id="search-input" placeholder="Search...">
+                        <button type="button" onclick="doSearch()" title="Search"><i class="fas fa-search"></i></button>
+                        <button type="button" onclick="clearSearch()" title="Clear"><i class="fas fa-times"></i></button>
+                    </div>
+                </div>
+
+                <div class="toolbar-center">
+                    <div class="uptime-badge">
+                        <i class="fas fa-arrow-up arrow"></i>
+                        <span class="value" id="overall-uptime">--%</span>
+                        <span class="label">Overall Uptime</span>
+                    </div>
+                </div>
+
+                <div class="toolbar-right">
+                    <button type="button" class="nav-btn" onclick="navigateHistory(-7)" id="btn-older">
+                        <i class="fas fa-chevron-left"></i> Older
+                    </button>
+                    <button type="button" class="nav-btn" onclick="navigateHistory(0)">Recent</button>
+                    <button type="button" class="date-display" onclick="loadStatus()" title="Refresh now">
+                        <span class="number" id="date-range">60</span>
+                        <i class="fas fa-sync-alt" id="refresh-icon"></i>
+                    </button>
+                    <button type="button" class="nav-btn" onclick="navigateHistory(7)" id="btn-newer" disabled>
+                        Newer <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="status-incidents-card hidden" id="status-incidents-card">
+                <div class="status-incidents-header">
+                    <i class="fas fa-bullhorn"></i>
+                    <span>Service Notices</span>
+                </div>
+                <div class="status-incidents-list" id="status-incidents-list"></div>
+            </div>
+
+            <div class="status-warning-banner hidden" id="status-warning-banner" role="status" aria-live="polite"></div>
+
+            <!-- Status Table with Categories and Monitors -->
+            <div class="status-table-wrapper">
+                <div id="monitors-container" class="monitor-groups">
+                    <div class="loading">
+                        <i class="fas fa-spinner"></i> Loading...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Navigation -->
+            <div class="bottom-nav">
+                <button type="button" class="nav-btn" onclick="navigateHistory(-7)" id="btn-older-bottom">
+                    <i class="fas fa-chevron-left"></i> Older
+                </button>
+                <button type="button" class="nav-btn" onclick="navigateHistory(0)">Recent</button>
+                <button type="button" class="date-display" onclick="loadStatus()" title="Refresh now">
+                    <span class="number" id="date-range-bottom">60</span>
+                    <i class="fas fa-sync-alt" id="refresh-icon-bottom"></i>
+                </button>
+                <button type="button" class="nav-btn" onclick="navigateHistory(7)" id="btn-newer-bottom" disabled>
+                    Newer <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            Powered by <a href="https://github.com/HellFireDevil18/Statrix" target="_blank" rel="noopener noreferrer">Statrix - Uptime Monitor</a>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const CONFIG = {
+            refreshInterval: 60,
+            historyDays: 7
+        };
+
+        // State
+        let allMonitors = [];
+        let filteredMonitors = [];
+        let historyOffset = 0;
+        let countdown = CONFIG.refreshInterval;
+        let collapsedCategories = new Set();
+        let viewMode = 'table';
+        let _statusLoading = false;
+        let _statusRetryTimer = null;
+        let _statusConsecutiveFailures = 0;
+        let _lastSuccessfulStatusPayload = null;
+
+        // DOM Cache - cache frequently accessed elements to avoid repeated DOM queries
+        const DOM = {
+            searchInput: document.getElementById('search-input'),
+            monitorsContainer: document.getElementById('monitors-container'),
+            btnNewer: document.getElementById('btn-newer'),
+            btnNewerBottom: document.getElementById('btn-newer-bottom'),
+            topRange: document.getElementById('date-range'),
+            bottomRange: document.getElementById('date-range-bottom'),
+            overallUptime: document.getElementById('overall-uptime'),
+            statusIncidentsCard: document.getElementById('status-incidents-card'),
+            statusIncidentsList: document.getElementById('status-incidents-list'),
+            statusWarningBanner: document.getElementById('status-warning-banner')
+        };
+
+        function withCacheBust(endpoint) {
+            try {
+                const url = new URL(endpoint, window.location.origin);
+                url.searchParams.set('_', Date.now().toString());
+                return url.toString();
+            } catch (e) {
+                return endpoint;
+            }
+        }
+
+        function fetchNoCache(endpoint, options = {}) {
+            return fetch(withCacheBust(endpoint), { ...options, cache: 'no-store' });
+        }
+
+        function syncCountdownDisplays(value) {
+            document.querySelectorAll('.date-display .number').forEach((el) => {
+                el.textContent = String(value);
+            });
+        }
+
+        // Load status page configuration (logo, etc.)
+        async function loadConfig() {
+            try {
+                const response = await fetch('/api/public/config');
+                if (response.ok) {
+                    const config = await response.json();
+                    if (config.logo_url) {
+                        const logoImg = document.querySelector('.logo-header img');
+                        if (logoImg) {
+                            logoImg.src = config.logo_url;
+                        }
+                    }
+                    if (config.status_page_title) {
+                        document.title = config.status_page_title;
+                        const pageTitleEl = document.getElementById('page-title');
+                        if (pageTitleEl) {
+                            pageTitleEl.textContent = config.status_page_title;
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to load config:', e);
+                // Fall back to default logo already in HTML
+            }
+        }
+
+        function normalizeBool(value) {
+            if (value === true || value === false) return value;
+            if (value === 1 || value === 0) return value === 1;
+            if (typeof value === 'string') {
+                const v = value.trim().toLowerCase();
+                if (['true', '1', 'yes', 'y', 't'].includes(v)) return true;
+                if (['false', '0', 'no', 'n', 'f', ''].includes(v)) return false;
+            }
+            return Boolean(value);
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function formatIncidentTimestamp(value) {
+            if (!value) return '--';
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return '--';
+            return date.toLocaleString();
+        }
+
+        function getIncidentSeverityClass(type) {
+            const normalized = String(type || '').toLowerCase();
+            if (normalized === 'down') return 'critical';
+            if (normalized === 'warning') return 'warning';
+            if (normalized === 'up') return 'recovery';
+            return 'info';
+        }
+
+        function getIncidentSeverityLabel(type) {
+            const normalized = String(type || '').toLowerCase();
+            if (normalized === 'down') return 'Critical';
+            if (normalized === 'warning') return 'Warning';
+            if (normalized === 'up') return 'Recovery';
+            return 'Info';
+        }
+
+        function getIncidentAffectedLabel(incident) {
+            if (!incident) return 'All services';
+            const monitorName = String(incident.monitor_name || '').trim();
+            if (monitorName) return monitorName;
+            return 'All services';
+        }
+
+        function renderStatusIncidents(incidents) {
+            const card = DOM.statusIncidentsCard;
+            const list = DOM.statusIncidentsList;
+            if (!card || !list) return;
+
+            if (!Array.isArray(incidents) || incidents.length === 0) {
+                card.classList.add('hidden');
+                list.innerHTML = '';
+                return;
+            }
+
+            const html = incidents.map((incident) => {
+                const statusClass = incident.status === 'resolved' ? 'resolved' : 'open';
+                const severityClass = getIncidentSeverityClass(incident.incident_type);
+                const severityLabel = getIncidentSeverityLabel(incident.incident_type);
+                const statusLabel = incident.status === 'resolved' ? 'Resolved' : 'Open';
+                const startedAt = formatIncidentTimestamp(incident.started_at);
+                const resolvedAt = incident.resolved_at ? formatIncidentTimestamp(incident.resolved_at) : null;
+                const affectedLabel = getIncidentAffectedLabel(incident);
+
+                return `
+                    <div class="status-incident-item ${statusClass}">
+                        <div class="status-incident-top">
+                            <div class="status-incident-title">${escapeHtml(incident.title || 'Untitled incident')}</div>
+                            <div class="incident-pills">
+                                <span class="status-incident-pill ${severityClass}">${severityLabel}</span>
+                                <span class="status-incident-pill status-${statusClass}">${statusLabel}</span>
+                            </div>
+                        </div>
+                        ${incident.description ? `<div class="status-incident-description">${escapeHtml(incident.description)}</div>` : ''}
+                        <div class="status-incident-meta">
+                            <span><i class="fas fa-bullseye"></i> Affected: ${escapeHtml(affectedLabel)}</span>
+                            <span><i class="fas fa-play-circle"></i> Started: ${escapeHtml(startedAt)}</span>
+                            ${resolvedAt ? `<span><i class="fas fa-check-circle"></i> Resolved: ${escapeHtml(resolvedAt)}</span>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            list.innerHTML = html;
+            card.classList.remove('hidden');
+        }
+
+        function showStatusWarning(message) {
+            const el = DOM.statusWarningBanner;
+            if (!el) return;
+            el.textContent = message || '';
+            if (message) el.classList.remove('hidden');
+        }
+
+        function hideStatusWarning() {
+            const el = DOM.statusWarningBanner;
+            if (!el) return;
+            el.textContent = '';
+            el.classList.add('hidden');
+        }
+
+        function scheduleStatusRetry(delayMs = 5000) {
+            if (_statusRetryTimer) return;
+            _statusRetryTimer = setTimeout(() => {
+                _statusRetryTimer = null;
+                loadStatus();
+            }, delayMs);
+        }
+
+        // View mode toggle
+        function setViewMode(mode) {
+            viewMode = mode;
+            document.querySelectorAll('.view-toggle button').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`.view-toggle button[onclick="setViewMode('${mode}')"]`).classList.add('active');
+            renderMonitors(filteredMonitors);
+        }
+
+        // Search functionality
+        function doSearch() {
+            const query = DOM.searchInput.value.toLowerCase().trim();
+            if (query) {
+                filteredMonitors = allMonitors.filter(m => m.name.toLowerCase().includes(query));
+            } else {
+                filteredMonitors = [...allMonitors];
+            }
+            renderMonitors(filteredMonitors);
+        }
+
+        function clearSearch() {
+            DOM.searchInput.value = '';
+            filteredMonitors = [...allMonitors];
+            renderMonitors(filteredMonitors);
+        }
+
+        // Debounce function to limit API calls on search input
+        let searchTimeout;
+        function debouncedSearch() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                doSearch();
+            }, 300); // 300ms delay
+        }
+
+        // Use debounced search for input events (triggered on every keystroke)
+        DOM.searchInput.addEventListener('input', debouncedSearch);
+        // Immediate search on Enter key (user explicitly requested)
+        DOM.searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                clearTimeout(searchTimeout);
+                doSearch();
+            }
+        });
+
+        // History navigation
+        let _navLoading = false;
+        function navigateHistory(offset) {
+            // Prevent rapid clicking while loading
+            if (_navLoading) return;
+
+            if (offset === 0) {
+                historyOffset = 0;
+            } else {
+                historyOffset += offset;
+            }
+
+            // Prevent going into the future
+            if (historyOffset > 0) historyOffset = 0;
+
+            const isAtCurrent = historyOffset >= 0;
+            DOM.btnNewer.disabled = isAtCurrent;
+            DOM.btnNewerBottom.disabled = isAtCurrent;
+
+            // Show loading state (don't re-render old data with new dates)
+            DOM.monitorsContainer.innerHTML = 
+                '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
+            
+            _navLoading = true;
+            loadStatus().finally(() => { _navLoading = false; });
+        }
+
+        // Toggle category collapse
+        function toggleCategory(categoryName) {
+            const categoryId = categoryName.replace(/[^a-zA-Z0-9]/g, '_');
+            
+            if (collapsedCategories.has(categoryName)) {
+                collapsedCategories.delete(categoryName);
+            } else {
+                collapsedCategories.add(categoryName);
+            }
+            
+            // Toggle the category header row
+            const categoryRow = document.querySelector(`.category-card-header[data-category="${categoryId}"]`);
+            if (categoryRow) {
+                categoryRow.classList.toggle('collapsed');
+            }
+            
+            // Toggle all content rows for this category
+            const contentRows = document.querySelectorAll(`.category-card-body[data-category-content="${categoryId}"]`);
+            contentRows.forEach(row => {
+                row.classList.toggle('collapsed-row');
+            });
+        }
+
+        // Get current date headers (chronological: oldest → newest, left → right)
+        function getDateHeaders() {
+            const headers = [];
+            const now = new Date();
+            const todayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            todayLocal.setDate(todayLocal.getDate() + historyOffset);
+
+            // Build from oldest to newest (6 days ago → today)
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date(todayLocal);
+                date.setDate(date.getDate() - i);
+                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                headers.push(`${monthNames[date.getMonth()]} ${date.getDate()}`);
+            }
+            return headers;
+        }
+
+        // Render monitors
+        function renderMonitors(monitors) {
+            const container = DOM.monitorsContainer;
+
+            if (!monitors || monitors.length === 0) {
+                container.innerHTML = '<div class="loading">No monitors configured</div>';
+                return;
+            }
+
+            const groups = {};
+            const uncategorized = [];
+
+            for (const monitor of monitors) {
+                if (monitor.category) {
+                    if (!groups[monitor.category]) {
+                        groups[monitor.category] = [];
+                    }
+                    groups[monitor.category].push(monitor);
+                } else {
+                    uncategorized.push(monitor);
+                }
+            }
+
+            let html = '';
+
+            // Render categorized monitors (alphabetical order)
+            for (const [category, categoryMonitors] of Object.entries(groups).sort(([a], [b]) => a.localeCompare(b))) {
+                const isCollapsed = collapsedCategories.has(category);
+                html += renderCategoryGroup(category, categoryMonitors, isCollapsed);
+            }
+
+            if (uncategorized.length > 0) {
+                const isCollapsed = collapsedCategories.has('Other');
+                html += renderCategoryGroup('Other', uncategorized, isCollapsed);
+            }
+
+            container.innerHTML = html;
+        }
+
+        function renderCategoryGroup(category, monitors, isCollapsed) {
+            const collapsedClass = isCollapsed ? 'collapsed' : '';
+            const bodyCollapsedClass = isCollapsed ? 'collapsed-row' : '';
+            const dateHeaders = getDateHeaders();
+            const categoryId = category.replace(/[^a-zA-Z0-9]/g, '_');
+
+            let bodyHtml = '';
+
+            // Monitor rows
+            if (viewMode === 'grid') {
+                // For grid view, we need a different approach - span full width
+                bodyHtml = `
+                    <tr class="grid-container-row">
+                        <td colspan="10">
+                            <div class="monitor-grid">
+                                ${monitors.map(m => renderMonitorCard(m)).join('')}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                // Table view - each monitor is a row
+                for (const monitor of monitors) {
+                    bodyHtml += renderMonitorRow(monitor);
+                }
+            }
+
+            return `
+                <section class="category-card">
+                    <table class="status-table category-table">
+                        <thead>
+                            <tr class="category-row category-card-header ${collapsedClass}" data-category="${categoryId}" data-category-name="${escapeHtml(category)}" onclick="toggleCategory(this.dataset.categoryName)">
+                                <th class="category-cell" colspan="2">
+                                    <div class="category-cell-inner">
+                                        <i class="fas fa-chevron-down chevron"></i>
+                                        <span class="category-title">${escapeHtml(category)}</span>
+                                    </div>
+                                </th>
+                                <th>Uptime</th>
+                                ${dateHeaders.map(d => `<th class="date-header">${d}</th>`).join('')}
+                            </tr>
+                        </thead>
+                        <tbody class="category-card-body ${bodyCollapsedClass}" data-category-content="${categoryId}">
+                            ${bodyHtml}
+                        </tbody>
+                    </table>
+                </section>
+            `;
+        }
+
+        function safeNumber(value) {
+            const n = Number(value);
+            return Number.isFinite(n) ? n : null;
+        }
+
+        function formatBitsPerSec(bitsPerSec) {
+            const v = Math.max(0, Number(bitsPerSec) || 0);
+            const kbps = v / 1000;
+            if (kbps < 1000) return `${Math.round(kbps)}kbps`;
+            const mbps = kbps / 1000;
+            if (mbps < 1000) return `${mbps.toFixed(2)}Mbps`;
+            const gbps = mbps / 1000;
+            return `${gbps.toFixed(2)}Gbps`;
+        }
+
+        function formatNetRate(bytesPerSec) {
+            const bps = (Number(bytesPerSec) || 0) * 8;
+            return formatBitsPerSec(bps);
+        }
+
+        function formatDowntimeDuration(minutes) {
+            const value = Number(minutes);
+            if (!Number.isFinite(value) || value < 0) return null;
+            if (value > 0 && value < 1) return '<1m';
+
+            const totalMinutes = Math.round(value);
+            const days = Math.floor(totalMinutes / 1440);
+            const hours = Math.floor((totalMinutes % 1440) / 60);
+            const mins = totalMinutes % 60;
+            const parts = [];
+
+            if (days > 0) parts.push(`${days}d`);
+            if (hours > 0) parts.push(`${hours}h`);
+            if (mins > 0 || parts.length === 0) parts.push(`${mins}m`);
+
+            return parts.join(' ');
+        }
+
+        function extractDowntimeMinutes(entry) {
+            if (!entry || typeof entry !== 'object') return null;
+            const value = Number(entry.downtime_minutes);
+            return Number.isFinite(value) && value >= 0 ? value : null;
+        }
+
+        function buildServerQuickBars(metrics, status) {
+            // Don't show bars for down/unavailable monitors
+            if (!metrics || status === 'down' || status === 'unknown' || status === 'no_data' || status === 'not_created') {
+                return '';
+            }
+
+            const cpu = safeNumber(metrics?.cpu);
+            const ram = safeNumber(metrics?.ram);
+            const disk = safeNumber(metrics?.disk_percent);
+            const netIn = safeNumber(metrics?.network_in);
+            const netOut = safeNumber(metrics?.network_out);
+            const ioWait = safeNumber(metrics?.cpu_io_wait);
+            const steal = safeNumber(metrics?.cpu_steal);
+
+            if (cpu == null && ram == null) return '';
+
+            const pctWidth = (v) => Math.min(100, Math.max(0, v ?? 0));
+            
+            function fmtNet(bytesPerSec) {
+                if (bytesPerSec == null || bytesPerSec === 0) return '0kbps';
+                const bps = bytesPerSec * 8;
+                if (bps < 1000) return bps.toFixed(0) + 'bps';
+                if (bps < 1000000) return (bps / 1000).toFixed(2) + 'kbps';
+                if (bps < 1000000000) return (bps / 1000000).toFixed(2) + 'Mbps';
+                return (bps / 1000000000).toFixed(2) + 'Gbps';
+            }
+
+            // Tooltips
+            const cpuTitle = `IOWait ${ioWait != null ? ioWait.toFixed(2) : '0.00'}%&#10;Steal ${steal != null ? steal.toFixed(2) : '0.00'}%&#10;CPU ${cpu != null ? cpu.toFixed(2) : '0.00'}%`;
+            const ramTitle = `RAM: ${ram == null ? 'N/A' : ram.toFixed(2) + '%'}`;
+            const diskTitle = `Disk: ${disk == null ? 'N/A' : disk.toFixed(2) + '%'}`;
+            const netTitle = `Net in/out:&#10;${fmtNet(netIn)}&#10;${fmtNet(netOut)}`;
+
+            // Network bar: 2-color gradient (green=in, blue=out) using CSS gradient
+            // Scale to 100Mbps for visual width
+            const inBps = (safeNumber(netIn) || 0) * 8;
+            const outBps = (safeNumber(netOut) || 0) * 8;
+            const totalBps = inBps + outBps;
+            const totalPct = Math.min(100, Math.max(3, (totalBps / 100000000) * 100));
+            // Ratio of in vs out within the filled portion
+            const inRatio = totalBps > 0 ? (inBps / totalBps) * 100 : 50;
+
+            return `
+                <div class="response-bars">
+                    <div class="response-bar" title="${cpuTitle}"><div class="response-bar-fill bar1" style="width: ${pctWidth(cpu)}%"></div></div>
+                    <div class="response-bar" title="${ramTitle}"><div class="response-bar-fill bar2" style="width: ${pctWidth(ram)}%"></div></div>
+                    <div class="response-bar" title="${diskTitle}"><div class="response-bar-fill bar3" style="width: ${pctWidth(disk)}%"></div></div>
+                    <div class="response-bar" title="${netTitle}"><div class="response-bar-fill" style="width: ${totalPct}%; background: linear-gradient(to right, #5cb85c ${inRatio}%, #5bc0de ${inRatio}%);"></div></div>
+                </div>
+            `;
+        }
+
+        function renderMonitorCard(m) {
+            const isServerAgent = m.type === 'heartbeat' && m.heartbeat_type === 'server_agent';
+            const isUp = m.status === 'up';
+            const isDown = m.status === 'down';
+            const isMaintenance = normalizeBool(m.maintenance_mode);
+            const statusClass = isMaintenance ? 'maintenance' : (isUp ? '' : (isDown ? 'down' : 'unknown'));
+            const statusIcon = isMaintenance ? 'arrow-up' : (isUp ? 'arrow-up' : (isDown ? 'arrow-down' : 'question'));
+            const uptimeValue = (m.uptime_percentage !== undefined && m.uptime_percentage !== null)
+                ? m.uptime_percentage.toFixed(4)
+                : null;
+            const reportUrl = isServerAgent
+                ? `/report.html?id=${m.id}&type=heartbeat&heartbeat_type=server_agent`
+                : (m.type === 'heartbeat'
+                    ? `/report.html?id=${m.id}&type=heartbeat&heartbeat_type=${m.heartbeat_type || 'cronjob'}`
+                    : `/report.html?id=${m.id}&type=${m.type}`);
+            const isPublic = normalizeBool(m.is_public) && !isMaintenance;
+
+            // Metrics / response info
+            let metricsHtml = '';
+            if (isServerAgent && m.metrics) {
+                metricsHtml = buildServerQuickBars(m.metrics, m.status);
+            } else if (m.type === 'uptime' && m.response_time_avg != null) {
+                const rt = Math.round(m.response_time_avg);
+                metricsHtml = `<div class="response-time-label">Avg response: <span class="response-time-value">${rt} ms</span></div>`;
+            }
+
+            // History dots (7)
+            const history = m.history || Array(7).fill('unknown');
+            const dateHeaders = getDateHeaders();
+            let historyHtml = '';
+            for (let i = 0; i < 7; i++) {
+                const entry = history[i] || 'unknown';
+                const dayStatus = (typeof entry === 'object' && entry !== null) ? (entry.status || 'unknown') : entry;
+                const customTooltip = (typeof entry === 'object' && entry !== null) ? (entry.tooltip || '') : '';
+                const downtimeMinutes = extractDowntimeMinutes(entry);
+                const downtimeLabel = formatDowntimeDuration(downtimeMinutes);
+                const dayLabel = dateHeaders[i] || '';
+                let tooltip = '';
+                let dotClass = '';
+                let dotIcon = 'arrow-up';
+                if (dayStatus === 'up') {
+                    dotClass = '';
+                    dotIcon = 'arrow-up';
+                    tooltip = `${dayLabel}: Online`;
+                } else if (dayStatus === 'down') {
+                    dotClass = 'down';
+                    dotIcon = 'arrow-down';
+                    tooltip = downtimeLabel
+                        ? `${dayLabel}: ${downtimeLabel} downtime`
+                        : `${dayLabel}: 15 min or more downtime`;
+                } else if (dayStatus === 'partial') {
+                    dotClass = 'partial';
+                    dotIcon = 'arrow-up';
+                    tooltip = downtimeLabel
+                        ? `${dayLabel}: ${downtimeLabel} downtime`
+                        : `${dayLabel}: 3 to 15 min downtime`;
+                } else if (dayStatus === 'maintenance') {
+                    dotClass = 'maintenance';
+                    dotIcon = 'arrow-up';
+                    tooltip = customTooltip || `${dayLabel}: Maintenance`;
+                } else if (dayStatus === 'not_created') {
+                    dotClass = 'unknown';
+                    dotIcon = 'times';
+                    tooltip = `${dayLabel}: Not monitored yet`;
+                } else if (dayStatus === 'no_data') {
+                    dotClass = 'unknown';
+                    dotIcon = 'times';
+                    tooltip = `${dayLabel}: No data received`;
+                } else {
+                    // Does not render '?' markers for unknown days
+                    historyHtml += `<div class="status-dot unknown"></div>`;
+                    continue;
+                }
+                if (customTooltip) {
+                    tooltip = customTooltip;
+                }
+                historyHtml += `<div class="status-dot ${dotClass}" ${tooltip ? `title="${tooltip}"` : ''}><i class="fas fa-${dotIcon}"></i></div>`;
+            }
+
+            // Only show clickable link if monitor is public
+            const nameDisplay = isPublic
+                ? `<a href="${reportUrl}">${m.name}</a>`
+                : `<span class="text-white">${m.name}</span>`;
+            const uptimeLabel = uptimeValue !== null ? `${uptimeValue}%` : '--';
+            const uptimeDisplay = (isPublic && uptimeValue !== null)
+                ? `<a href="${reportUrl}">${uptimeLabel}</a>`
+                : `<span class="text-primary">${uptimeLabel}</span>`;
+
+            return `
+                <div class="monitor-card">
+                    <div class="monitor-card-header">
+                        <div class="status-icon ${statusClass}">
+                            <i class="fas fa-${statusIcon}"></i>
+                        </div>
+                        <div class="monitor-card-title">
+                            ${nameDisplay}
+                            <div class="monitor-card-uptime">${uptimeDisplay}</div>
+                        </div>
+                    </div>
+                    <div class="monitor-card-metrics">${metricsHtml}</div>
+                    <div class="monitor-card-history">${historyHtml}</div>
+                </div>
+            `;
+        }
+
+        function renderMonitorRow(m) {
+            const isServerAgent = m.type === 'heartbeat' && m.heartbeat_type === 'server_agent';
+            const isUp = m.status === 'up';
+            const isDown = m.status === 'down';
+            const isMaintenance = normalizeBool(m.maintenance_mode);
+            const statusClass = isMaintenance ? 'maintenance' : (isUp ? '' : (isDown ? 'down' : 'unknown'));
+            const statusIcon = isMaintenance ? 'arrow-up' : (isUp ? 'arrow-up' : (isDown ? 'arrow-down' : 'question'));
+            const uptimeValue = (m.uptime_percentage !== undefined && m.uptime_percentage !== null)
+                ? m.uptime_percentage.toFixed(4)
+                : null;
+
+            // Get metrics for response bars
+            const metrics = m.metrics || {};
+            const showBars = isServerAgent && m.metrics;
+            const responseTimeAvg = m.response_time_avg;
+
+            // Get history for daily status
+            const history = m.history || Array(7).fill('unknown');
+
+            // Report URL
+            const reportUrl = isServerAgent
+                ? `/report.html?id=${m.id}&type=heartbeat&heartbeat_type=server_agent`
+                : (m.type === 'heartbeat'
+                    ? `/report.html?id=${m.id}&type=heartbeat&heartbeat_type=${m.heartbeat_type || 'cronjob'}`
+                    : `/report.html?id=${m.id}&type=${m.type}`);
+            const isPublic = normalizeBool(m.is_public) && !isMaintenance;
+
+            // Build response bars HTML
+            let barsHtml = '';
+            if (showBars) {
+                barsHtml = buildServerQuickBars(metrics, m.status);
+            } else if (m.type === 'uptime' && responseTimeAvg != null) {
+                const rt = Math.round(responseTimeAvg);
+                barsHtml = `<div class="response-time-label">Avg response: <span class="response-time-value">${rt} ms</span></div>`;
+            }
+
+            // Build daily status cells with icons & tooltips
+            const dateHeaders = getDateHeaders();
+            let dailyStatusCells = '';
+            for (let i = 0; i < 7; i++) {
+                const entry = history[i] || 'unknown';
+                const dayStatus = (typeof entry === 'object' && entry !== null) ? (entry.status || 'unknown') : entry;
+                const customTooltip = (typeof entry === 'object' && entry !== null) ? (entry.tooltip || '') : '';
+                const downtimeMinutes = extractDowntimeMinutes(entry);
+                const downtimeLabel = formatDowntimeDuration(downtimeMinutes);
+                const dayLabel = dateHeaders[i] || '';
+                let dotClass = '';
+                let dotIcon = '';
+                let tooltip = '';
+                
+                if (dayStatus === 'up') {
+                    dotClass = '';
+                    dotIcon = 'arrow-up';
+                    tooltip = `${dayLabel}: Online`;
+                } else if (dayStatus === 'down') {
+                    dotClass = 'down';
+                    dotIcon = 'arrow-down';
+                    tooltip = downtimeLabel
+                        ? `${dayLabel}: ${downtimeLabel} downtime`
+                        : `${dayLabel}: 15 min or more downtime`;
+                } else if (dayStatus === 'partial') {
+                    dotClass = 'partial';
+                    dotIcon = 'arrow-up';
+                    tooltip = downtimeLabel
+                        ? `${dayLabel}: ${downtimeLabel} downtime`
+                        : `${dayLabel}: 3 to 15 min downtime`;
+                } else if (dayStatus === 'maintenance') {
+                    dotClass = 'maintenance';
+                    dotIcon = 'arrow-up';
+                    tooltip = customTooltip || `${dayLabel}: Maintenance`;
+                } else if (dayStatus === 'not_created') {
+                    // Gray X circle - monitor didn't exist yet
+                    dotClass = 'not-created';
+                    dotIcon = 'times';
+                    tooltip = `${dayLabel}: Not monitored yet`;
+                } else if (dayStatus === 'no_data') {
+                    // Gray X circle - no data received
+                    dotClass = 'no-data';
+                    dotIcon = 'times';
+                    tooltip = `${dayLabel}: No data received`;
+                } else {
+                    // Fallback: unknown = gray X
+                    dotClass = 'unknown';
+                    dotIcon = 'times';
+                    tooltip = `${dayLabel}: Unknown`;
+                }
+
+                if (customTooltip) {
+                    tooltip = customTooltip;
+                }
+                
+                dailyStatusCells += `
+                    <td class="daily-col">
+                        <div class="daily-status">
+                            <div class="status-dot ${dotClass}" title="${tooltip}">
+                                <i class="fas fa-${dotIcon}"></i>
+                            </div>
+                        </div>
+                    </td>
+                `;
+            }
+
+            // Only show clickable link if monitor is public
+            const nameDisplay = isPublic
+                ? `<a href="${reportUrl}"><strong>${m.name}</strong></a>`
+                : `<span class="text-white"><strong>${m.name}</strong></span>`;
+            const uptimeLabel = uptimeValue !== null ? `${uptimeValue}%` : '--';
+            const uptimeDisplay = (isPublic && uptimeValue !== null)
+                ? `<a href="${reportUrl}">${uptimeLabel}</a>`
+                : `<span class="text-primary">${uptimeLabel}</span>`;
+
+            return `
+                <tr class="monitor-row">
+                    <td class="status-cell">
+                        <div class="status-icon ${statusClass}">
+                            <i class="fas fa-${statusIcon}"></i>
+                        </div>
+                    </td>
+                    <td class="name-cell">
+                        <div class="monitor-info">
+                            ${nameDisplay}
+                            ${barsHtml}
+                        </div>
+                    </td>
+                    <td class="uptime-col">
+                        <div class="uptime-cell">
+                            ${uptimeDisplay}
+                        </div>
+                    </td>
+                    ${dailyStatusCells}
+                </tr>
+            `;
+        }
+
+        // Load status data
+        async function loadStatus() {
+            if (_statusLoading) return;
+            _statusLoading = true;
+            let requestTimeout = null;
+            // Add spinning animation to refresh icons and hide countdown
+            document.querySelectorAll('.fa-sync-alt').forEach(icon => icon.classList.add('spinning'));
+            document.querySelectorAll('.date-display .number').forEach(num => num.style.display = 'none');
+            
+            // Disable ALL navigation buttons during loading to prevent race conditions
+            document.querySelectorAll('.date-display').forEach(btn => btn.disabled = true);
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.disabled = true);
+            
+            try {
+                const params = new URLSearchParams();
+                if (historyOffset !== 0) {
+                    params.set('offset', historyOffset);
+                }
+                params.set('tz_offset_minutes', String(-new Date().getTimezoneOffset()));
+                
+                const url = '/api/public/status' + (params.toString() ? '?' + params.toString() : '');
+                const controller = new AbortController();
+                requestTimeout = setTimeout(() => controller.abort(), 12000);
+                const res = await fetchNoCache(url, { signal: controller.signal });
+                
+                if (!res.ok) throw new Error('Failed to load');
+                
+                const data = await res.json();
+                _lastSuccessfulStatusPayload = data;
+                _statusConsecutiveFailures = 0;
+                hideStatusWarning();
+                allMonitors = data.monitors || [];
+                filteredMonitors = [...allMonitors];
+                
+                const uptimeValue = (data.overall_uptime !== undefined && data.overall_uptime !== null) 
+                    ? data.overall_uptime.toFixed(4) + '%'
+                    : 'N/A';
+                DOM.overallUptime.textContent = uptimeValue;
+                renderStatusIncidents(data.status_incidents || []);
+
+                const searchQuery = DOM.searchInput.value.toLowerCase().trim();
+                if (searchQuery) {
+                    filteredMonitors = allMonitors.filter(m => m.name.toLowerCase().includes(searchQuery));
+                }
+
+                renderMonitors(filteredMonitors);
+
+            } catch (e) {
+                console.error('Error loading status:', e);
+                _statusConsecutiveFailures += 1;
+                const retryDelayMs = Math.min(15000, 3000 + (_statusConsecutiveFailures * 2000));
+                scheduleStatusRetry(retryDelayMs);
+
+                if (_lastSuccessfulStatusPayload && Array.isArray(_lastSuccessfulStatusPayload.monitors) && _lastSuccessfulStatusPayload.monitors.length > 0) {
+                    showStatusWarning('Live update delayed. Showing last known status while retrying...');
+                } else {
+                    renderStatusIncidents([]);
+                    DOM.monitorsContainer.innerHTML =
+                        '<div class="loading loading-error"><i class="fas fa-exclamation-triangle"></i> Unable to load status</div>';
+                    showStatusWarning('Unable to reach status API. Retrying automatically...');
+                }
+            } finally {
+                if (requestTimeout) clearTimeout(requestTimeout);
+                document.querySelectorAll('.fa-sync-alt').forEach(icon => icon.classList.remove('spinning'));
+                document.querySelectorAll('.date-display .number').forEach(num => num.style.display = '');
+                syncCountdownDisplays(countdown);
+                document.querySelectorAll('.date-display').forEach(btn => btn.disabled = false);
+
+                // Re-enable nav buttons (respect Newer disabled state)
+                document.querySelectorAll('.nav-btn').forEach(btn => btn.disabled = false);
+                const isAtCurrent = historyOffset >= 0;
+                DOM.btnNewer.disabled = isAtCurrent;
+                DOM.btnNewerBottom.disabled = isAtCurrent;
+
+                _navLoading = false;
+                _statusLoading = false;
+            }
+        }
+
+        // Auto-refresh countdown
+        setInterval(() => {
+            countdown--;
+            if (countdown <= 0) {
+                countdown = CONFIG.refreshInterval;
+                loadStatus();
+            }
+            syncCountdownDisplays(countdown);
+        }, 1000);
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                countdown = CONFIG.refreshInterval;
+                loadStatus();
+            }
+        });
+
+        loadConfig();
+        loadStatus();
+    </script>
+</body>
+
+</html>

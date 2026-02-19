@@ -1,0 +1,21 @@
+{
+    "name": "Statrix",
+    "short_name": "Statrix",
+    "description": "Self-hosted uptime monitoring service by HellFireDevil18",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#1E232A",
+    "theme_color": "#00d4aa",
+    "icons": [
+        {
+            "src": "/static/images/logo.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "/static/images/logo.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}

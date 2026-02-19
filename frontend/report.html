@@ -1,0 +1,1661 @@
+<!-- This file is a part of Statrix -->
+<!-- Coding : Priyanshu Dey [@HellFireDevil18] -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor Details - Statrix</title>
+    <link rel="icon" type="image/png" href="/static/images/favicon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/images/logo.png">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/public.css">
+    <link rel="stylesheet" href="/static/css/report-page.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-content">
+            <i class="fas fa-spinner"></i>
+            <span>Loading monitor details...</span>
+        </div>
+    </div>
+
+    <!-- Main Content (hidden until loaded) -->
+    <div class="main-content" id="main-content">
+    <div class="container">
+        <!-- Logo Header -->
+        <div class="logo-header">
+            <a href="/" target="_blank" rel="noopener noreferrer" title="Status Page">
+                <img src="{{STATUS_LOGO_URL}}" alt="Status Page Logo" id="status-logo">
+            </a>
+        </div>
+
+        <!-- Header: Back Arrow, Title, Dropdown, SLA - all on one line -->
+        <div class="title-header">
+            <!-- Left side: Back arrow + Title (clickable) -->
+            <div class="title-header-left">
+                <a href="javascript:window.history.back();" class="back-link" title="Back">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+                <a href="javascript:window.history.back();" class="page-title" id="monitor-title">
+                    <i class="fas fa-spinner fa-spin" id="title-spinner"></i>Loading... (Recent History)
+                </a>
+            </div>
+            <!-- Right side: Calendar icon + Dropdown -->
+            <div class="history-controls">
+                <label class="calendar-btn" for="history-select" title="Select History">
+                    <i class="fas fa-calendar-alt"></i>
+                </label>
+                <div class="history-dropdown">
+                    <select id="history-select" onchange="loadHistoryPeriod(this.value)" title="History period">
+                        <option value="recent">Recent History</option>
+                        <!-- Monthly options populated dynamically -->
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Cards -->
+        <div class="status-cards">
+            <div class="status-card" id="status-card">
+                <div class="icon">
+                    <i class="fas fa-arrow-up" id="status-icon"></i>
+                </div>
+                <div class="info">
+                    <div class="value" id="status-value">Online</div>
+                    <div class="label" id="status-duration">Since --</div>
+                </div>
+            </div>
+            <div class="status-card">
+                <div class="icon">
+                    <i class="fas fa-chart-pie"></i>
+                </div>
+                <div class="info">
+                    <div class="value" id="overall-uptime">--%</div>
+                    <div class="label">Overall uptime</div>
+                </div>
+            </div>
+            <div class="status-card">
+                <div class="icon">
+                    <i class="fas fa-server" id="type-icon"></i>
+                </div>
+                <div class="info">
+                    <div class="value" id="monitor-os">--</div>
+                    <div class="label" id="type-label">Operating system</div>
+                </div>
+            </div>
+            <div class="status-card">
+                <div class="icon">
+                    <i class="fas fa-heartbeat" id="monitor-icon"></i>
+                </div>
+                <div class="info">
+                    <div class="value" id="monitor-type">--</div>
+                    <div class="label">Monitor</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monitor Details -->
+        <div class="content-box">
+            <div class="section-header">
+                <h3><i class="fas fa-info-circle"></i> Monitor Details</h3>
+                <div class="timezone-notice">
+                    <i class="fas fa-info-circle"></i>
+                    Time is shown in <strong id="timezone-display">UTC+00:00</strong>, which is <span id="timezone-diff">-- hours behind yours.</span>
+                </div>
+            </div>
+
+            <div class="details-container">
+                <table class="details-table">
+                    <tr>
+                        <td>Monitored since:</td>
+                        <td id="monitored-since">--</td>
+                    </tr>
+                    <tr>
+                        <td>Last overall check:</td>
+                        <td id="last-check">--</td>
+                    </tr>
+                    <tr>
+                        <td id="check-policy-label">Timeout limit:</td>
+                        <td id="timeout-limit">--</td>
+                    </tr>
+                </table>
+
+                <table class="details-table">
+                    <tr>
+                        <td>Last 24 hours uptime:</td>
+                        <td><span class="uptime-value" id="uptime-24h">--%</span> <span class="uptime-secondary" id="uptime-24h-secondary">(--%)</span></td>
+                    </tr>
+                    <tr>
+                        <td>Last 7 days uptime:</td>
+                        <td><span class="uptime-value" id="uptime-7d">--%</span> <span class="uptime-secondary" id="uptime-7d-secondary">(--%)</span></td>
+                    </tr>
+                    <tr>
+                        <td>Last 30 days uptime:</td>
+                        <td><span class="uptime-value" id="uptime-30d">--%</span> <span class="uptime-secondary" id="uptime-30d-secondary">(--%)</span></td>
+                    </tr>
+                    <tr>
+                        <td><span id="current-year">2026</span> uptime:</td>
+                        <td><span class="uptime-value" id="uptime-year">--%</span> <span class="uptime-secondary" id="uptime-year-secondary">(--%)</span></td>
+                    </tr>
+                    <tr>
+                        <td>Total uptime:</td>
+                        <td><span class="uptime-value" id="uptime-total">--%</span> <span class="uptime-secondary" id="uptime-total-secondary">(--%)</span></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Recent Uptime -->
+        <div class="content-box">
+            <div class="section-header">
+                <h3><i class="fas fa-history"></i> Recent Uptime</h3>
+            </div>
+            <div class="recent-uptime" id="recent-uptime">
+                <!-- Populated dynamically -->
+            </div>
+        </div>
+
+        <!-- CPU Usage Chart -->
+        <div class="content-box hidden" id="cpu-section">
+            <div class="graph-section">
+                <div class="graph-header">
+                    <div class="graph-title">
+                        <i class="fas fa-microchip"></i> CPU Usage
+                    </div>
+                    <div class="time-range-btns" id="cpu-time-btns">
+                        <button type="button" data-hours="3">3h</button>
+                        <button type="button" data-hours="6">6h</button>
+                        <button type="button" data-hours="12">12h</button>
+                        <button type="button" data-hours="24">24h</button>
+                        <button type="button" data-hours="72">72h</button>
+                        <button type="button" data-hours="168" class="active">7d</button>
+                        <button type="button" data-hours="360">15d</button>
+                        <button type="button" data-hours="720">30d</button>
+                        <button type="button" data-hours="2160">3m</button>
+                        <button type="button" data-hours="4320">6m</button>
+                        <button type="button" data-hours="8760">1y</button>
+                        <button type="button" data-hours="26280">3y</button>
+                        <button type="button" data-hours="52560">6y</button>
+                        <button type="button" class="refresh-btn" onclick="refreshChart('cpu')" title="Refresh"><i class="fas fa-sync-alt"></i></button>
+                    </div>
+                </div>
+                <div class="graph-container">
+                    <canvas id="cpu-chart"></canvas>
+                </div>
+                <div class="graph-legend" id="cpu-legend">
+                    <div class="legend-item" data-dataset="0"><span class="color color-info"></span> CPU</div>
+                    <div class="legend-item" data-dataset="1"><span class="color color-warning"></span> IOWait</div>
+                    <div class="legend-item" data-dataset="2"><span class="color color-danger"></span> Steal</div>
+                    <div class="legend-item" data-dataset="3"><span class="color color-success"></span> User</div>
+                    <div class="legend-item" data-dataset="4"><span class="color color-purple"></span> System</div>
+                </div>
+                <div class="graph-stats">
+                    <div class="graph-stat">
+                        <div class="label">Current CPU Usage</div>
+                        <div class="value" id="cpu-current">--%</div>
+                    </div>
+                    <div class="graph-stat">
+                        <div class="label">Average CPU Usage</div>
+                        <div class="value" id="cpu-avg">--%</div>
+                    </div>
+                    <div class="graph-stat">
+                        <div class="label">Max CPU Usage</div>
+                        <div class="value" id="cpu-max">--%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RAM Usage Chart -->
+        <div class="content-box hidden" id="ram-section">
+            <div class="graph-section">
+                <div class="graph-header">
+                    <div class="graph-title">
+                        <i class="fas fa-memory"></i> RAM Usage
+                    </div>
+                    <div class="time-range-btns" id="ram-time-btns">
+                        <button type="button" data-hours="3">3h</button>
+                        <button type="button" data-hours="6">6h</button>
+                        <button type="button" data-hours="12">12h</button>
+                        <button type="button" data-hours="24">24h</button>
+                        <button type="button" data-hours="72">72h</button>
+                        <button type="button" data-hours="168" class="active">7d</button>
+                        <button type="button" data-hours="360">15d</button>
+                        <button type="button" data-hours="720">30d</button>
+                        <button type="button" data-hours="2160">3m</button>
+                        <button type="button" data-hours="4320">6m</button>
+                        <button type="button" data-hours="8760">1y</button>
+                        <button type="button" data-hours="26280">3y</button>
+                        <button type="button" data-hours="52560">6y</button>
+                        <button type="button" class="refresh-btn" onclick="refreshChart('ram')" title="Refresh"><i class="fas fa-sync-alt"></i></button>
+                    </div>
+                </div>
+                <div class="graph-container">
+                    <canvas id="ram-chart"></canvas>
+                </div>
+                <div class="graph-legend" id="ram-legend">
+                    <div class="legend-item" data-dataset="0"><span class="color color-success"></span> RAM</div>
+                    <div class="legend-item" data-dataset="1"><span class="color color-danger"></span> Swap</div>
+                    <div class="legend-item" data-dataset="2"><span class="color color-info"></span> Buffered</div>
+                    <div class="legend-item" data-dataset="3"><span class="color color-warning"></span> Cached</div>
+                </div>
+                <div class="graph-stats">
+                    <div class="graph-stat">
+                        <div class="label">Current RAM Usage</div>
+                        <div class="value" id="ram-current">--%</div>
+                    </div>
+                    <div class="graph-stat">
+                        <div class="label">Average RAM Usage</div>
+                        <div class="value" id="ram-avg">--%</div>
+                    </div>
+                    <div class="graph-stat">
+                        <div class="label">Max RAM Usage</div>
+                        <div class="value" id="ram-max">--%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Network Usage Chart -->
+        <div class="content-box hidden" id="network-section">
+            <div class="graph-section">
+                <div class="graph-header">
+                    <div class="graph-title">
+                        <i class="fas fa-network-wired"></i> Network Usage
+                    </div>
+                    <div class="time-range-btns" id="network-time-btns">
+                        <button type="button" data-hours="3">3h</button>
+                        <button type="button" data-hours="6">6h</button>
+                        <button type="button" data-hours="12">12h</button>
+                        <button type="button" data-hours="24">24h</button>
+                        <button type="button" data-hours="72">72h</button>
+                        <button type="button" data-hours="168" class="active">7d</button>
+                        <button type="button" data-hours="360">15d</button>
+                        <button type="button" data-hours="720">30d</button>
+                        <button type="button" data-hours="2160">3m</button>
+                        <button type="button" data-hours="4320">6m</button>
+                        <button type="button" data-hours="8760">1y</button>
+                        <button type="button" data-hours="26280">3y</button>
+                        <button type="button" data-hours="52560">6y</button>
+                        <button type="button" class="refresh-btn" onclick="refreshChart('network')" title="Refresh"><i class="fas fa-sync-alt"></i></button>
+                    </div>
+                </div>
+                <div class="graph-container">
+                    <canvas id="network-chart"></canvas>
+                </div>
+                <div class="graph-legend" id="network-legend">
+                    <div class="legend-item" data-dataset="0"><span class="color color-success"></span> In</div>
+                    <div class="legend-item" data-dataset="1"><span class="color color-info"></span> Out</div>
+                </div>
+                <div class="graph-stats">
+                    <div class="graph-stat">
+                        <div class="label">Current Network Usage</div>
+                        <div class="value" id="network-current">--</div>
+                        <div class="sub-values" id="network-current-detail">In: -- | Out: --</div>
+                    </div>
+                    <div class="graph-stat">
+                        <div class="label">Average Network Usage</div>
+                        <div class="value" id="network-avg">--</div>
+                        <div class="sub-values" id="network-avg-detail">In: -- | Out: --</div>
+                    </div>
+                    <div class="graph-stat">
+                        <div class="label">Total Network Usage</div>
+                        <div class="value" id="network-total">--</div>
+                        <div class="sub-values" id="network-total-detail">In: -- | Out: --</div>
+                    </div>
+                    <div class="graph-stat">
+                        <div class="label">Max Network Usage</div>
+                        <div class="value" id="network-max">--</div>
+                        <div class="sub-values" id="network-max-detail">In: -- | Out: --</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Disk Usage Chart -->
+        <div class="content-box hidden" id="disk-section">
+            <div class="graph-section">
+                <div class="graph-header">
+                    <div class="graph-title">
+                        <i class="fas fa-hdd"></i> Disk Usage
+                    </div>
+                    <div class="time-range-btns" id="disk-time-btns">
+                        <button type="button" data-hours="3">3h</button>
+                        <button type="button" data-hours="6">6h</button>
+                        <button type="button" data-hours="12">12h</button>
+                        <button type="button" data-hours="24">24h</button>
+                        <button type="button" data-hours="72">72h</button>
+                        <button type="button" data-hours="168" class="active">7d</button>
+                        <button type="button" data-hours="360">15d</button>
+                        <button type="button" data-hours="720">30d</button>
+                        <button type="button" data-hours="2160">3m</button>
+                        <button type="button" data-hours="4320">6m</button>
+                        <button type="button" data-hours="8760">1y</button>
+                        <button type="button" data-hours="26280">3y</button>
+                        <button type="button" data-hours="52560">6y</button>
+                        <button type="button" class="refresh-btn" onclick="refreshChart('disk')" title="Refresh"><i class="fas fa-sync-alt"></i></button>
+                    </div>
+                </div>
+                <div class="graph-container">
+                    <canvas id="disk-chart"></canvas>
+                </div>
+                <div class="graph-legend" id="disk-legend">
+                    <div class="legend-item" data-dataset="0"><span class="color color-info"></span> Disk</div>
+                </div>
+                <div class="graph-stats">
+                    <div class="graph-stat">
+                        <div class="label">Current Disk Usage</div>
+                        <div class="value" id="disk-current">--%</div>
+                    </div>
+                    <div class="graph-stat">
+                        <div class="label">Average Disk Usage</div>
+                        <div class="value" id="disk-avg">--%</div>
+                    </div>
+                    <div class="graph-stat">
+                        <div class="label">Max Disk Usage</div>
+                        <div class="value" id="disk-max">--%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            Powered by <a href="https://github.com/HellFireDevil18/Statrix" target="_blank" rel="noopener noreferrer">Statrix</a> - Uptime Monitor
+        </div>
+    </div>
+    </div> <!-- End main-content -->
+
+    <script>
+        async function loadConfig() {
+            try {
+                const response = await fetch('/api/public/config');
+                if (response.ok) {
+                    const config = await response.json();
+                    if (config.logo_url) {
+                        const logoImg = document.getElementById('status-logo');
+                        if (logoImg) {
+                            logoImg.src = config.logo_url;
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to load config:', e);
+                // Fall back to default logo already in HTML
+            }
+        }
+
+        // URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        const monitorId = urlParams.get('id');
+        const rawTypeParam = (urlParams.get('type') || 'uptime').toLowerCase();
+
+        function normalizeMonitorType(rawType) {
+            const t = String(rawType || '').trim().toLowerCase();
+            if (!t) return 'uptime';
+            if (['web', 'website', 'http', 'https', 'uptime'].includes(t)) return 'uptime';
+            if (['cron', 'cronjob', 'heartbeat'].includes(t)) return 'heartbeat';
+            if (['agent', 'server', 'server-agent', 'server_agent', 'heartbeat-server-agent'].includes(t)) return 'heartbeat';
+            return t;
+        }
+
+        function normalizeHeartbeatType(rawType) {
+            const t = String(rawType || '').trim().toLowerCase();
+            if (!t) return '';
+            if (['server_agent', 'server-agent', 'serveragent', 'server', 'agent', 'heartbeat-server-agent'].includes(t)) return 'server_agent';
+            if (['cron', 'cronjob', 'heartbeat-cronjob', 'heartbeat'].includes(t)) return 'cronjob';
+            return t;
+        }
+
+        const monitorType = normalizeMonitorType(rawTypeParam);
+        let rawHeartbeatType = normalizeHeartbeatType(urlParams.get('heartbeat_type') || '');
+        if (!rawHeartbeatType && ['agent', 'server', 'server-agent', 'server_agent', 'heartbeat-server-agent'].includes(rawTypeParam)) {
+            rawHeartbeatType = 'server_agent';
+        }
+
+        function isServerAgentContext() {
+            if (monitorType !== 'heartbeat') return false;
+            const responseHeartbeatType = (monitorData?.heartbeat_type || '').toLowerCase();
+            return rawHeartbeatType === 'server_agent'
+                || responseHeartbeatType === 'server_agent';
+        }
+
+        function getMonitorDetailsEndpoint() {
+            const tzOffsetMinutes = -new Date().getTimezoneOffset();
+            if (isServerAgentContext()) {
+                return `/api/public/monitor/heartbeat/server-agent/${monitorId}?tz_offset_minutes=${encodeURIComponent(String(tzOffsetMinutes))}`;
+            }
+            return `/api/public/monitor/${monitorType}/${monitorId}?tz_offset_minutes=${encodeURIComponent(String(tzOffsetMinutes))}`;
+        }
+
+        function getMonitorHistoryEndpoint(hours = null, start = null, end = null) {
+            if (!isServerAgentContext()) return null;
+            const base = `/api/public/monitor/heartbeat/server-agent/${monitorId}/history`;
+            if (hours !== null) return `${base}?hours=${hours}`;
+            const params = new URLSearchParams({ start, end });
+            return `${base}?${params.toString()}`;
+        }
+
+        function getMonthlyArchivesEndpoint() {
+            if (isServerAgentContext()) {
+                return `/api/public/monitor/heartbeat/server-agent/${monitorId}/history/months`;
+            }
+            return `/api/public/monitor/${monitorType}/${monitorId}/history/months`;
+        }
+
+        function withCacheBust(endpoint) {
+            try {
+                const url = new URL(endpoint, window.location.origin);
+                url.searchParams.set('_', Date.now().toString());
+                return url.toString();
+            } catch (e) {
+                return endpoint;
+            }
+        }
+
+        function fetchNoCache(endpoint, options = {}) {
+            return fetch(withCacheBust(endpoint), { ...options, cache: 'no-store' });
+        }
+
+        // Chart instances
+        let cpuChart, ramChart, networkChart, diskChart;
+        let currentTimeRange = 168; // Default 7 days
+        let activeGraphSpanHours = 168;
+        let historyMode = 'recent'; // 'recent' | 'month'
+        let selectedMonthRange = null; // { startISO, endISO, label }
+
+        // Monitor data
+        let monitorData = null;
+        let detailsRefreshInFlight = false;
+
+        function syncTitleForMode(forceRecent = false) {
+            const titleElement = document.getElementById('monitor-title');
+            if (!titleElement || !monitorData) return;
+
+            if (forceRecent || historyMode === 'recent' || !selectedMonthRange) {
+                titleElement.textContent = `${monitorData.name} (Recent History)`;
+            } else {
+                titleElement.textContent = `${monitorData.name} (${selectedMonthRange.label})`;
+            }
+            titleElement.href = 'javascript:window.history.back();';
+        }
+
+        function applyMonitorDetails(data, { forceRecentTitle = false, showContent = false } = {}) {
+            monitorData = data;
+
+            syncTitleForMode(forceRecentTitle);
+            document.title = `${monitorData.name} - Statrix`;
+
+            const statusCard = document.getElementById('status-card');
+            const statusIcon = document.getElementById('status-icon');
+            const statusValue = document.getElementById('status-value');
+            const statusDuration = document.getElementById('status-duration');
+
+            const isUp = monitorData.status === 'up';
+            const statusSinceTimestamp = resolveStatusSinceTimestamp(monitorData, monitorData.status);
+
+            if (isUp) {
+                statusCard.classList.remove('offline');
+                statusIcon.className = 'fas fa-arrow-up';
+                statusValue.textContent = 'Online';
+                statusDuration.textContent = formatDuration(statusSinceTimestamp);
+            } else {
+                statusCard.classList.add('offline');
+                statusIcon.className = 'fas fa-arrow-down';
+                statusValue.textContent = 'Offline';
+                statusDuration.textContent = formatDuration(statusSinceTimestamp);
+            }
+
+            const uptime = monitorData.uptime_percentage;
+            if (uptime !== undefined && uptime !== null) {
+                document.getElementById('overall-uptime').textContent = uptime.toFixed(4) + '%';
+            } else {
+                document.getElementById('overall-uptime').textContent = 'N/A';
+            }
+
+            const monitorOsEl = document.getElementById('monitor-os');
+            const typeLabelEl = document.getElementById('type-label');
+            const typeIconEl = document.getElementById('type-icon');
+            const monitorIconEl = document.getElementById('monitor-icon');
+            const resolvedHeartbeatType = (monitorData?.heartbeat_type || rawHeartbeatType || '').toLowerCase();
+            const isHeartbeatMonitor = monitorType === 'heartbeat';
+            const isServerAgentMonitor = isHeartbeatMonitor && resolvedHeartbeatType === 'server_agent';
+            const isCronjobMonitor = isHeartbeatMonitor && !isServerAgentMonitor;
+
+            if (isCronjobMonitor) {
+                monitorOsEl.textContent = 'Cron Job';
+                monitorOsEl.title = 'Cron Job';
+                typeLabelEl.textContent = 'Type';
+                typeIconEl.className = 'fas fa-clock';
+                monitorIconEl.className = 'fas fa-gears';
+            } else if (isServerAgentMonitor) {
+                const normalizedOs = monitorData.os ? simplifyOsName(monitorData.os) : null;
+                monitorOsEl.textContent = normalizedOs || '--';
+                monitorOsEl.title = monitorData.os || '--';
+                typeLabelEl.textContent = 'Operating system';
+                typeIconEl.className = 'fas fa-server';
+                monitorIconEl.className = 'fas fa-heartbeat';
+            } else {
+                const targetDisplay = monitorData.target || '--';
+                monitorOsEl.textContent = targetDisplay;
+                monitorOsEl.title = targetDisplay;
+                typeLabelEl.textContent = 'Target';
+                typeIconEl.className = 'fas fa-globe';
+                monitorIconEl.className = 'fas fa-globe';
+            }
+
+            // Update monitor type card (compact label, full label in tooltip)
+            const compactTypeLabel = getMonitorTypeLabel(monitorType, monitorData?.heartbeat_type || rawHeartbeatType, true);
+            const fullTypeLabel = getMonitorTypeLabel(monitorType, monitorData?.heartbeat_type || rawHeartbeatType, false);
+            const monitorTypeEl = document.getElementById('monitor-type');
+            monitorTypeEl.textContent = compactTypeLabel;
+            monitorTypeEl.title = fullTypeLabel;
+
+            const monitoredSince = monitorData.first_data_at || monitorData.created_at;
+            const checkPolicyLabelEl = document.getElementById('check-policy-label');
+            const checkPolicyValueEl = document.getElementById('timeout-limit');
+            document.getElementById('monitored-since').textContent = formatDate(monitoredSince);
+            if (isCronjobMonitor) {
+                if (checkPolicyLabelEl) checkPolicyLabelEl.textContent = 'Ping policy:';
+                if (checkPolicyValueEl) checkPolicyValueEl.textContent = '1min';
+            } else {
+                if (checkPolicyLabelEl) checkPolicyLabelEl.textContent = 'Timeout limit:';
+                if (checkPolicyValueEl) checkPolicyValueEl.textContent = (monitorData.timeout || 5) + 'min';
+            }
+            updateRelativeTimes();
+
+            updateUptimeStats(monitorData);
+            updateRecentUptime(monitorData.history || []);
+
+            if (showContent) {
+                // Show chart sections (they're already loaded via parallel tasks)
+                if (isServerAgentContext()) {
+                    document.getElementById('cpu-section').classList.remove('hidden');
+                    document.getElementById('ram-section').classList.remove('hidden');
+                    document.getElementById('network-section').classList.remove('hidden');
+                    document.getElementById('disk-section').classList.remove('hidden');
+                }
+
+                // Hide loading overlay and show content - ALL DATA IS NOW READY
+                document.getElementById('loading-overlay').style.display = 'none';
+                document.getElementById('main-content').style.display = 'block';
+            }
+        }
+
+        function resolveStatusSinceTimestamp(data, status = '') {
+            if (!data || typeof data !== 'object') return null;
+            let candidates;
+            if (status === 'down') {
+                candidates = [
+                    data.status_since,
+                    data.last_report_at,
+                    data.last_ping_at,
+                    data.last_check_at
+                ];
+            } else {
+                candidates = [
+                    data.status_since,
+                    data.last_up_at,
+                    data.first_data_at,
+                    data.last_report_at,
+                    data.last_ping_at,
+                    data.last_check_at
+                ];
+            }
+            for (const value of candidates) {
+                if (typeof value === 'string' && value.trim()) {
+                    return value;
+                }
+            }
+            return null;
+        }
+
+        function getLastOverallCheckTimestamp(data) {
+            if (!data || typeof data !== 'object') return null;
+            return data.last_report_at || data.last_ping_at || data.last_check_at || null;
+        }
+
+        function updateRelativeTimes() {
+            if (!monitorData) return;
+
+            const statusDurationEl = document.getElementById('status-duration');
+            const lastCheckEl = document.getElementById('last-check');
+            const statusSinceTimestamp = resolveStatusSinceTimestamp(monitorData, monitorData.status);
+            const lastOverallCheckTimestamp = getLastOverallCheckTimestamp(monitorData);
+
+            if (statusDurationEl) {
+                statusDurationEl.textContent = formatDuration(statusSinceTimestamp);
+            }
+            if (lastCheckEl) {
+                lastCheckEl.textContent = formatTimeAgo(lastOverallCheckTimestamp);
+            }
+        }
+
+        function simplifyOsName(value) {
+            const raw = String(value || '').trim();
+            if (!raw) return '';
+
+            const lower = raw.toLowerCase();
+
+            if (lower.includes('windows 11')) return 'Windows 11';
+            if (lower.includes('windows 10')) return 'Windows 10';
+            if (lower.includes('windows server 2025')) return 'Windows Server 2025';
+            if (lower.includes('windows server 2022')) return 'Windows Server 2022';
+            if (lower.includes('windows server 2019')) return 'Windows Server 2019';
+            if (lower.includes('windows server 2016')) return 'Windows Server 2016';
+            if (lower.includes('windows server')) return 'Windows Server';
+            if (lower.includes('windows')) return 'Windows';
+            if (lower.includes('ubuntu')) return 'Ubuntu';
+            if (lower.includes('debian')) return 'Debian';
+            if (lower.includes('rocky')) return 'Rocky Linux';
+            if (lower.includes('almalinux')) return 'AlmaLinux';
+            if (lower.includes('centos')) return 'CentOS';
+            if (lower.includes('red hat') || lower.includes('rhel')) return 'RHEL';
+            if (lower.includes('amazon linux') || lower.includes('amzn')) return 'Amazon Linux';
+            if (lower.includes('fedora')) return 'Fedora';
+            if (lower.includes('opensuse')) return 'openSUSE';
+            if (lower.includes('suse')) return 'SUSE Linux';
+            if (lower.includes('linux mint')) return 'Linux Mint';
+            if (lower.includes('kali')) return 'Kali Linux';
+            if (lower.includes('arch')) return 'Arch Linux';
+            if (lower.includes('alpine')) return 'Alpine Linux';
+            if (lower.includes('gentoo')) return 'Gentoo';
+            if (lower.includes('darwin') || lower.includes('mac os') || lower.includes('macos')) return 'macOS';
+
+            const cleaned = raw
+                .replace(/\(.*?\)/g, ' ')
+                .replace(/gnu\/linux/ig, '')
+                .replace(/\s+/g, ' ')
+                .trim();
+            if (!cleaned) return raw;
+            const primary = cleaned.split(/[,:;/]/)[0].trim();
+            return primary || cleaned;
+        }
+
+        async function fetchMonitorDetails() {
+            const res = await fetchNoCache(getMonitorDetailsEndpoint());
+            if (!res.ok) {
+                if (res.status === 404) {
+                    let detail = '';
+                    try {
+                        const err = await res.json();
+                        detail = err?.detail || '';
+                    } catch (_) {
+                        detail = '';
+                    }
+                    if (detail === 'Monitor in maintenance mode') {
+                        throw new Error('MAINTENANCE_MONITOR');
+                    }
+                    if (detail === 'Monitor not found') {
+                        throw new Error('UNAVAILABLE_MONITOR');
+                    }
+                    throw new Error('PRIVATE_MONITOR');
+                }
+                throw new Error('Failed to load monitor');
+            }
+            return res.json();
+        }
+
+        function handleMonitorLoadError(e, { showOverlay = true } = {}) {
+            console.error('Error loading monitor:', e);
+            if (e.message === 'PRIVATE_MONITOR') {
+                window.location.href = '/404.html?reason=private';
+                return;
+            }
+            if (e.message === 'UNAVAILABLE_MONITOR') {
+                window.location.href = '/404.html?reason=unavailable';
+                return;
+            }
+            if (e.message === 'MAINTENANCE_MONITOR') {
+                window.location.href = '/404.html?reason=maintenance';
+                return;
+            }
+            if (showOverlay) {
+                document.getElementById('loading-overlay').innerHTML = '<div class="loading-content"><i class="fas fa-exclamation-triangle"></i><span>Error loading monitor</span></div>';
+            }
+        }
+
+        async function refreshMonitorDetails() {
+            if (detailsRefreshInFlight) return;
+            if (!monitorId) return;
+            detailsRefreshInFlight = true;
+            try {
+                const data = await fetchMonitorDetails();
+                applyMonitorDetails(data, { forceRecentTitle: false, showContent: false });
+            } catch (e) {
+                handleMonitorLoadError(e, { showOverlay: false });
+            } finally {
+                detailsRefreshInFlight = false;
+            }
+        }
+
+        async function init() {
+            loadConfig();
+
+            if (!monitorId) {
+                document.getElementById('monitor-title').textContent = 'Error: No monitor ID';
+                return;
+            }
+
+            updateTimezoneDisplay();
+            setupCalendarButton();
+            setupLegendHandlers();
+            await loadMonitorDetails();
+            setupTimeRangeButtons();
+        }
+
+        function updateTimezoneDisplay() {
+            document.getElementById('timezone-display').textContent = 'UTC+00:00';
+            
+            // Calculate difference between UTC and user's local time
+            const offsetMinutes = new Date().getTimezoneOffset(); // negative for east of UTC
+            const userOffsetHours = -offsetMinutes / 60; // positive for east of UTC (e.g. IST = 5.5)
+            
+            let diffText;
+            if (userOffsetHours === 0) {
+                diffText = 'same as yours.';
+            } else {
+                const absDiff = Math.abs(userOffsetHours);
+                const hourStr = absDiff === 1 ? '1 hour' : `${absDiff} hours`;
+                if (userOffsetHours > 0) {
+                    // UTC is BEHIND the user (user is east of UTC)
+                    diffText = `${hourStr} behind yours.`;
+                } else {
+                    // UTC is AHEAD of the user (user is west of UTC)
+                    diffText = `${hourStr} ahead of yours.`;
+                }
+            }
+            document.getElementById('timezone-diff').textContent = diffText;
+            
+            document.getElementById('current-year').textContent = new Date().getFullYear();
+        }
+
+        function setupCalendarButton() {
+            // Calendar button is now a <label for="history-select">
+            // which natively opens the select dropdown - no JS needed
+        }
+
+        function getChartByMetric(metric) {
+            switch (metric) {
+                case 'cpu': return cpuChart;
+                case 'ram': return ramChart;
+                case 'network': return networkChart;
+                case 'disk': return diskChart;
+                default: return null;
+            }
+        }
+
+        function syncLegendOpacity(metric) {
+            const legend = document.getElementById(`${metric}-legend`);
+            const chart = getChartByMetric(metric);
+            if (!legend || !chart) return;
+
+            legend.querySelectorAll('.legend-item').forEach(item => {
+                const idx = parseInt(item.dataset.dataset, 10);
+                if (Number.isNaN(idx)) return;
+                item.style.opacity = chart.isDatasetVisible(idx) ? '1' : '0.4';
+            });
+        }
+
+        function setupLegendHandlers() {
+            ['cpu', 'ram', 'network', 'disk'].forEach(metric => {
+                const legend = document.getElementById(`${metric}-legend`);
+                if (!legend) return;
+
+                legend.querySelectorAll('.legend-item').forEach(item => {
+                    if (item.dataset.bound === '1') return;
+                    item.dataset.bound = '1';
+
+                    item.addEventListener('click', () => {
+                        const idx = parseInt(item.dataset.dataset, 10);
+                        if (Number.isNaN(idx)) return;
+
+                        const chart = getChartByMetric(metric);
+                        if (!chart) return;
+
+                        const visible = chart.isDatasetVisible(idx);
+                        chart.setDatasetVisibility(idx, !visible);
+                        chart.update();
+                        syncLegendOpacity(metric);
+                    });
+                });
+            });
+        }
+
+        async function loadMonitorDetails() {
+            try {
+                // Load monthly archives and chart data IN PARALLEL with monitor details
+                const parallelTasks = [
+                    fetchMonitorDetails(),
+                    loadMonthlyArchives()
+                ];
+                if (isServerAgentContext()) {
+                    parallelTasks.push(loadServerHistoryHours(currentTimeRange));
+                }
+
+                const results = await Promise.all(parallelTasks);
+                applyMonitorDetails(results[0], { forceRecentTitle: true, showContent: true });
+
+            } catch (e) {
+                handleMonitorLoadError(e, { showOverlay: true });
+            }
+        }
+
+        function toTimestampMs(dateStr) {
+            if (!dateStr) return null;
+            let utcStr = String(dateStr);
+            if (!utcStr.endsWith('Z') && !utcStr.includes('+') && !utcStr.includes('-', 10)) {
+                utcStr += 'Z';
+            }
+            const date = new Date(utcStr);
+            const ms = date.getTime();
+            return Number.isFinite(ms) ? ms : null;
+        }
+
+        function formatDuration(dateStr) {
+            const ts = toTimestampMs(dateStr);
+            if (!Number.isFinite(ts) || ts <= 0) return 'Since --';
+            const diff = Math.max(0, Date.now() - ts);
+            
+            const weeks = Math.floor(diff / (7 * 24 * 60 * 60 * 1000));
+            const days = Math.floor((diff % (7 * 24 * 60 * 60 * 1000)) / (24 * 60 * 60 * 1000));
+            const hours = Math.floor((diff % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+            const minutes = Math.floor((diff % (60 * 60 * 1000)) / (60 * 1000));
+            const seconds = Math.floor((diff % (60 * 1000)) / 1000);
+            
+            if (weeks > 0) {
+                return `Since ${weeks}w ${days}d ago`;
+            }
+            if (days > 0) {
+                return `Since ${days}d ago`;
+            }
+            if (hours > 0) {
+                return `Since ${hours}h ago`;
+            }
+            if (minutes > 0) {
+                return `Since ${minutes}m ago`;
+            }
+            return `Since ${Math.max(0, seconds)}s ago`;
+        }
+
+        function formatDate(dateStr) {
+            const ts = toTimestampMs(dateStr);
+            if (!Number.isFinite(ts) || ts <= 0) return '--';
+            const date = new Date(ts);
+            const day = date.getUTCDate();
+            const suffix = getDaySuffix(day);
+            const month = date.toLocaleString('en-US', { month: 'long', timeZone: 'UTC' });
+            const year = date.getUTCFullYear();
+            return `${day}${suffix} of ${month} ${year}`;
+        }
+
+        function getDaySuffix(day) {
+            if (day >= 11 && day <= 13) return 'th';
+            switch (day % 10) {
+                case 1: return 'st';
+                case 2: return 'nd';
+                case 3: return 'rd';
+                default: return 'th';
+            }
+        }
+
+        function formatTimeAgo(dateStr) {
+            const ts = toTimestampMs(dateStr);
+            if (!Number.isFinite(ts) || ts <= 0) return '--';
+            const diff = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+
+            if (diff < 60) return diff + 'sec ago';
+            if (diff < 3600) return Math.floor(diff / 60) + 'min ago';
+            if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+            return Math.floor(diff / 86400) + 'd ago';
+        }
+
+        function getMonitorTypeLabel(type, heartbeatType = '', compact = false) {
+            const hbType = (heartbeatType || '').toLowerCase();
+            if (type === 'heartbeat') {
+                if (hbType === 'server_agent') {
+                    return compact ? 'Server Agent' : 'Heartbeat (Server Agent)';
+                }
+                return compact ? 'Heartbeat' : 'Heartbeat (Cronjob)';
+            }
+            if (type === 'uptime') {
+                return compact ? 'Website' : 'Website Monitor';
+            }
+            return type;
+        }
+
+        function updateUptimeStats(data) {
+            const stats = data.uptime_stats || {};
+
+            const pick = (key) => {
+                const v = stats[key];
+                // Return null if value is null/undefined, otherwise return the number
+                if (v === null || v === undefined) return null;
+                return (typeof v === 'number' && !Number.isNaN(v)) ? v : null;
+            };
+
+            const formatUptime = (value) => {
+                if (value === null || value === undefined) {
+                    return 'N/A';
+                }
+                return value.toFixed(4) + '%';
+            };
+
+            const v24h = pick('24h');
+            const v7d = pick('7d');
+            const v30d = pick('30d');
+            const vYear = pick('year');
+            const vTotal = pick('total');
+
+            document.getElementById('uptime-24h').textContent = formatUptime(v24h);
+            document.getElementById('uptime-24h-secondary').textContent = v24h !== null ? `(${v24h.toFixed(4)}%)` : '';
+
+            document.getElementById('uptime-7d').textContent = formatUptime(v7d);
+            document.getElementById('uptime-7d-secondary').textContent = v7d !== null ? `(${v7d.toFixed(4)}%)` : '';
+
+            document.getElementById('uptime-30d').textContent = formatUptime(v30d);
+            document.getElementById('uptime-30d-secondary').textContent = v30d !== null ? `(${v30d.toFixed(4)}%)` : '';
+
+            document.getElementById('uptime-year').textContent = formatUptime(vYear);
+            document.getElementById('uptime-year-secondary').textContent = vYear !== null ? `(${vYear.toFixed(4)}%)` : '';
+
+            document.getElementById('uptime-total').textContent = formatUptime(vTotal);
+            document.getElementById('uptime-total-secondary').textContent = vTotal !== null ? `(${vTotal.toFixed(4)}%)` : '';
+        }
+
+        function updateRecentUptime(history) {
+            const container = document.getElementById('recent-uptime');
+            const now = new Date();
+            const todayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const entries = Array.isArray(history) ? history : [];
+            
+            let html = '';
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(todayLocal);
+                date.setDate(todayLocal.getDate() - (6 - i));
+                
+                const day = date.getDate();
+                const suffix = getDaySuffix(day);
+                const month = date.toLocaleString('en-US', { month: 'short' });
+
+                const entry = (i < entries.length ? entries[i] : 'not_created') ?? 'not_created';
+
+                const status = (typeof entry === 'object' && entry !== null) ? (entry.status || 'unknown') : entry;
+                const customTooltip = (typeof entry === 'object' && entry !== null) ? (entry.tooltip || '') : '';
+                const downtimeMinutes = (typeof entry === 'object' && entry !== null && entry.downtime_minutes != null)
+                    ? Number(entry.downtime_minutes)
+                    : null;
+                const dayLabel = `${day}${suffix} ${month}`;
+                let statusClass = '';
+                let icon = 'arrow-up';
+                let tooltip = '';
+                
+                if (status === 'down') {
+                    statusClass = 'down';
+                    icon = 'arrow-down';
+                    tooltip = Number.isFinite(downtimeMinutes) && downtimeMinutes > 0
+                        ? `${dayLabel}: ${formatDowntimeDuration(downtimeMinutes)} downtime`
+                        : `${dayLabel}: 15 min or more downtime`;
+                } else if (status === 'partial') {
+                    statusClass = 'partial';
+                    icon = 'arrow-up';
+                    tooltip = Number.isFinite(downtimeMinutes) && downtimeMinutes > 0
+                        ? `${dayLabel}: ${formatDowntimeDuration(downtimeMinutes)} downtime`
+                        : `${dayLabel}: 3 to 15 min downtime`;
+                } else if (status === 'maintenance') {
+                    statusClass = 'maintenance';
+                    icon = 'arrow-up';
+                    tooltip = `${dayLabel}: Maintenance`;
+                } else if (status === 'not_created') {
+                    statusClass = 'unknown';
+                    icon = 'times';
+                    tooltip = `${dayLabel}: Not monitored yet`;
+                } else if (status === 'no_data') {
+                    statusClass = 'unknown';
+                    icon = 'times';
+                    tooltip = `${dayLabel}: No data received`;
+                } else if (status === 'unknown') {
+                    statusClass = 'unknown';
+                    icon = 'question';
+                    tooltip = `${dayLabel}: Unknown`;
+                } else {
+                    statusClass = '';
+                    icon = 'arrow-up';
+                    tooltip = `${dayLabel}: Online`;
+                }
+
+                if (customTooltip) {
+                    tooltip = customTooltip;
+                }
+                
+                html += `
+                    <div class="uptime-day">
+                        <div class="date">${day}${suffix} ${month}</div>
+                        <div class="status ${statusClass}" title="${tooltip}">
+                            <i class="fas fa-${icon}"></i>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+        }
+
+        function formatDowntimeDuration(minutes) {
+            const value = Number(minutes);
+            if (!Number.isFinite(value) || value <= 0) return '';
+            const rounded = Math.round(value);
+            const hours = Math.floor(rounded / 60);
+            const mins = rounded % 60;
+            if (hours > 0 && mins > 0) return `${hours}h ${mins}m`;
+            if (hours > 0) return `${hours}h`;
+            return `${Math.max(1, mins)}m`;
+        }
+
+        // Populate history dropdown (real monthly archives from API)
+        async function loadMonthlyArchives() {
+            const select = document.getElementById('history-select');
+            if (!select) return;
+
+            // Remove any previously-added month options (keep "recent")
+            Array.from(select.querySelectorAll('option')).forEach((opt) => {
+                if (opt.value !== 'recent') opt.remove();
+            });
+
+            try {
+                const res = await fetchNoCache(getMonthlyArchivesEndpoint());
+                if (!res.ok) return;
+                const data = await res.json();
+                const archives = Array.isArray(data.archives) ? data.archives : [];
+
+                // Newest-first
+                archives.sort((a, b) => (b.year - a.year) || (b.month_num - a.month_num));
+
+                for (const a of archives) {
+                    if (!a || !a.year || !a.month_num) continue;
+                    const year = Number(a.year);
+                    const monthNum = Number(a.month_num);
+                    const monthKey = `${year}-${String(monthNum).padStart(2, '0')}`;
+                    const label = a.month || new Date(Date.UTC(year, monthNum - 1, 1)).toLocaleString('en-US', { month: 'short', year: 'numeric' });
+                    const uptime = (typeof a.uptime === 'number' && !Number.isNaN(a.uptime)) ? a.uptime : 100;
+
+                    const option = document.createElement('option');
+                    option.value = monthKey;
+                    option.textContent = `${label} (${uptime.toFixed(4)}%)`;
+                    select.appendChild(option);
+                }
+            } catch (e) {
+                console.error('Error loading monthly archives:', e);
+            }
+        }
+
+        function setTimeControlsEnabled(enabled) {
+            ['cpu', 'ram', 'network', 'disk'].forEach(metric => {
+                const container = document.getElementById(`${metric}-time-btns`);
+                if (!container) return;
+                container.querySelectorAll('button[data-hours]').forEach(btn => {
+                    btn.disabled = !enabled;
+                });
+            });
+        }
+
+        function setActiveTimeRange(hours) {
+            const h = Number(hours);
+            if (!Number.isFinite(h)) return;
+
+            currentTimeRange = h;
+            ['cpu', 'ram', 'network', 'disk'].forEach(metric => {
+                const container = document.getElementById(`${metric}-time-btns`);
+                if (!container) return;
+                container.querySelectorAll('button').forEach(btn => {
+                    const btnHours = Number(btn.dataset.hours);
+                    btn.classList.toggle('active', btnHours === h);
+                });
+            });
+        }
+
+        async function loadHistoryPeriod(period) {
+            if (!monitorData) return;
+
+            if (period === 'recent') {
+                historyMode = 'recent';
+                selectedMonthRange = null;
+                setTimeControlsEnabled(true);
+                setActiveTimeRange(currentTimeRange);
+                const titleElement = document.getElementById('monitor-title');
+                titleElement.textContent = `${monitorData.name} (Recent History)`;
+                titleElement.href = 'javascript:window.history.back();';
+
+                if (isServerAgentContext()) {
+                    await loadServerHistoryHours(currentTimeRange);
+                }
+                return;
+            }
+
+            const [yearStr, monthStr] = String(period).split('-');
+            const year = parseInt(yearStr, 10);
+            const month = parseInt(monthStr, 10);
+            if (!year || !month) return;
+
+            historyMode = 'month';
+            setTimeControlsEnabled(false);
+
+            const monthName = new Date(Date.UTC(year, month - 1, 1)).toLocaleString('en-US', { month: 'short' });
+            const titleElement = document.getElementById('monitor-title');
+            titleElement.textContent = `${monitorData.name} (${monthName} ${year})`;
+            titleElement.href = 'javascript:window.history.back();';
+
+            const start = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0));
+            const end = new Date(Date.UTC(year, month, 1, 0, 0, 0));
+            selectedMonthRange = { startISO: start.toISOString(), endISO: end.toISOString(), label: `${monthName} ${year}` };
+
+            if (isServerAgentContext()) {
+                await loadServerHistoryRange(selectedMonthRange.startISO, selectedMonthRange.endISO);
+            }
+        }
+
+        function setupTimeRangeButtons() {
+            ['cpu', 'ram', 'network', 'disk'].forEach(metric => {
+                const container = document.getElementById(`${metric}-time-btns`);
+                if (!container) return;
+                
+                container.querySelectorAll('button[data-hours]').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        if (historyMode !== 'recent') return;
+                        const hours = parseInt(btn.dataset.hours);
+                        setActiveTimeRange(hours);
+                        await loadServerHistoryHours(hours);
+                    });
+                });
+            });
+        }
+
+        function refreshChart(metric) {
+            if (!isServerAgentContext()) return;
+            if (historyMode === 'month' && selectedMonthRange) {
+                loadServerHistoryRange(selectedMonthRange.startISO, selectedMonthRange.endISO);
+            } else {
+                loadServerHistoryHours(currentTimeRange);
+            }
+        }
+
+        function renderAllServerCharts(history) {
+            renderCpuChart(history);
+            renderRamChart(history);
+            renderNetworkChart(history);
+            renderDiskChart(history);
+            updateAllStats(history);
+            syncLegendOpacity('cpu');
+            syncLegendOpacity('ram');
+            syncLegendOpacity('network');
+            syncLegendOpacity('disk');
+        }
+
+        // Load server history (recent) by hours
+        async function loadServerHistoryHours(hours = 168) {
+            try {
+                activeGraphSpanHours = hours;
+                const endpoint = getMonitorHistoryEndpoint(hours);
+                if (!endpoint) return;
+                const res = await fetchNoCache(endpoint);
+                if (!res.ok) throw new Error('Failed to load history');
+                const history = await res.json();
+
+                if (history && history.length > 0) {
+                    renderAllServerCharts(history);
+                }
+            } catch (e) {
+                console.error('Error loading history:', e);
+            }
+        }
+
+        // Load server history for an explicit time range (used by month selection)
+        async function loadServerHistoryRange(startISO, endISO) {
+            try {
+                const start = new Date(startISO);
+                const end = new Date(endISO);
+                const span = (end.getTime() - start.getTime()) / 3600000;
+                activeGraphSpanHours = Number.isFinite(span) && span > 0 ? span : 168;
+
+                const endpoint = getMonitorHistoryEndpoint(null, startISO, endISO);
+                if (!endpoint) return;
+                const res = await fetchNoCache(endpoint);
+                if (!res.ok) throw new Error('Failed to load history');
+                const history = await res.json();
+
+                if (history && history.length > 0) {
+                    renderAllServerCharts(history);
+                }
+            } catch (e) {
+                console.error('Error loading history range:', e);
+            }
+        }
+
+        // Chart configuration
+        const chartConfig = {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            },
+            elements: {
+                point: {
+                    radius: 0,
+                    hoverRadius: 3,
+                    hitRadius: 10,
+                    hoverBorderWidth: 2
+                },
+                line: {
+                    borderWidth: 1.5,
+                    tension: 0.35
+                }
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#1e2a38',
+                    titleColor: '#fff',
+                    bodyColor: '#c5d0de',
+                    borderColor: '#2d3a4a',
+                    borderWidth: 1,
+                    callbacks: {
+                        title: (items) => {
+                            const ts = items?.[0]?.label;
+                            const d = parseTimestamp(ts);
+                            if (!d || Number.isNaN(d.getTime())) return '';
+                            return d.toLocaleString([], { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+                        },
+                        label: (ctx) => {
+                            const label = ctx.dataset?.label || '';
+                            const v = ctx.parsed?.y;
+                            if (v == null || Number.isNaN(v)) return `${label}: --`;
+
+                            const unit = ctx.dataset?.metaUnit;
+                            if (unit === 'percent') return `${label}: ${Number(v).toFixed(2)}%`;
+                            if (unit === 'mbps') {
+                                const mbps = Math.max(0, Number(v) || 0);
+                                if (mbps < 1) return `${label}: ${Math.round(mbps * 1000)}kbps`;
+                                if (mbps < 1000) return `${label}: ${mbps.toFixed(2)}Mbps`;
+                                return `${label}: ${(mbps / 1000).toFixed(2)}Gbps`;
+                            }
+                            return `${label}: ${v}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    min: 0,
+                    ticks: { color: '#889097' },
+                    grid: { color: '#2d3a4a' }
+                },
+                x: {
+                    ticks: {
+                        color: '#889097',
+                        maxTicksLimit: 8,
+                        callback: function(value) {
+                            const raw = this.getLabelForValue(value);
+                            const d = parseTimestamp(raw);
+                            if (!d || Number.isNaN(d.getTime())) return '';
+
+                            const h = activeGraphSpanHours || 168;
+                            if (h <= 12) {
+                                return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                            }
+                            if (h <= 72) {
+                                return d.toLocaleString([], { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+                            }
+                            return d.toLocaleDateString([], { month: 'short', day: '2-digit' });
+                        }
+                    },
+                    grid: { color: '#2d3a4a' }
+                }
+            }
+        };
+
+        function renderCpuChart(history) {
+            const ctx = document.getElementById('cpu-chart').getContext('2d');
+            if (cpuChart) cpuChart.destroy();
+
+            cpuChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: history.map(h => formatChartDate(h.timestamp)),
+                    datasets: [
+                        {
+                            label: 'CPU',
+                            metaUnit: 'percent',
+                            data: history.map(h => h.cpu_percent),
+                            borderColor: '#5bc0de',
+                            backgroundColor: 'rgba(91, 192, 222, 0.35)',
+                            fill: 'origin',
+                            borderWidth: 1.5,
+                            pointRadius: 0,
+                            pointHoverRadius: 3
+                        },
+                        {
+                            label: 'IOWait',
+                            metaUnit: 'percent',
+                            data: history.map(h => h.cpu_io_wait),
+                            borderColor: '#f0ad4e',
+                            backgroundColor: 'rgba(240, 173, 78, 0.08)',
+                            fill: 'origin',
+                            borderWidth: 1.5,
+                            pointRadius: 0,
+                            pointHoverRadius: 3
+                        },
+                        {
+                            label: 'Steal',
+                            metaUnit: 'percent',
+                            data: history.map(h => h.cpu_steal),
+                            borderColor: '#d9534f',
+                            backgroundColor: 'rgba(217, 83, 79, 0.08)',
+                            fill: 'origin',
+                            borderWidth: 1,
+                            pointRadius: 0,
+                            pointHoverRadius: 3
+                        },
+                        {
+                            label: 'User',
+                            metaUnit: 'percent',
+                            data: history.map(h => h.cpu_user),
+                            borderColor: '#5cb85c',
+                            backgroundColor: 'rgba(92, 184, 92, 0.08)',
+                            fill: 'origin',
+                            borderWidth: 1.5,
+                            pointRadius: 0,
+                            pointHoverRadius: 3
+                        },
+                        {
+                            label: 'System',
+                            metaUnit: 'percent',
+                            data: history.map(h => h.cpu_system),
+                            borderColor: '#9b59b6',
+                            backgroundColor: 'rgba(155, 89, 182, 0.08)',
+                            fill: 'origin',
+                            borderWidth: 1,
+                            pointRadius: 0,
+                            pointHoverRadius: 3
+                        }
+                    ]
+                },
+                options: { ...chartConfig, scales: { ...chartConfig.scales, y: { ...chartConfig.scales.y, max: 100 } } }
+            });
+        }
+
+        function renderRamChart(history) {
+            const ctx = document.getElementById('ram-chart').getContext('2d');
+            if (ramChart) ramChart.destroy();
+
+            ramChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: history.map(h => formatChartDate(h.timestamp)),
+                    datasets: [
+                        {
+                            label: 'RAM',
+                            metaUnit: 'percent',
+                            data: history.map(h => h.ram_percent),
+                            borderColor: '#5cb85c',
+                            backgroundColor: 'rgba(92, 184, 92, 0.4)',
+                            fill: 'origin',
+                            borderWidth: 1.5,
+                            pointRadius: 0,
+                            pointHoverRadius: 3
+                        },
+                        {
+                            label: 'Swap',
+                            metaUnit: 'percent',
+                            data: history.map(h => h.ram_swap_percent),
+                            borderColor: '#d9534f',
+                            backgroundColor: 'rgba(217, 83, 79, 0.08)',
+                            fill: 'origin',
+                            borderWidth: 1,
+                            pointRadius: 0,
+                            pointHoverRadius: 3
+                        },
+                        {
+                            label: 'Buffered',
+                            metaUnit: 'percent',
+                            data: history.map(h => h.ram_buff_percent),
+                            borderColor: '#5bc0de',
+                            backgroundColor: 'rgba(91, 192, 222, 0.08)',
+                            fill: 'origin',
+                            borderWidth: 1,
+                            pointRadius: 0,
+                            pointHoverRadius: 3
+                        },
+                        {
+                            label: 'Cached',
+                            metaUnit: 'percent',
+                            data: history.map(h => h.ram_cache_percent),
+                            borderColor: '#f0ad4e',
+                            backgroundColor: 'rgba(240, 173, 78, 0.08)',
+                            fill: 'origin',
+                            borderWidth: 1,
+                            pointRadius: 0,
+                            pointHoverRadius: 3
+                        }
+                    ]
+                },
+                options: { ...chartConfig, scales: { ...chartConfig.scales, y: { ...chartConfig.scales.y, max: 100 } } }
+            });
+        }
+
+        function renderNetworkChart(history) {
+            const ctx = document.getElementById('network-chart').getContext('2d');
+            if (networkChart) networkChart.destroy();
+
+            const toMbps = (bytesPerSec) => {
+                const v = (typeof bytesPerSec === 'number' && !Number.isNaN(bytesPerSec)) ? bytesPerSec : 0;
+                return (v * 8) / 1_000_000;
+            };
+
+            networkChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: history.map(h => formatChartDate(h.timestamp)),
+                    datasets: [
+                        {
+                            label: 'In',
+                            metaUnit: 'mbps',
+                            data: history.map(h => toMbps(h.network_in)),
+                            borderColor: '#5cb85c',
+                            backgroundColor: 'rgba(92, 184, 92, 0.45)',
+                            fill: 'origin',
+                            borderWidth: 1.5,
+                            pointRadius: 0,
+                            pointHoverRadius: 3
+                        },
+                        {
+                            label: 'Out',
+                            metaUnit: 'mbps',
+                            data: history.map(h => toMbps(h.network_out)),
+                            borderColor: '#5bc0de',
+                            backgroundColor: 'rgba(91, 192, 222, 0.3)',
+                            fill: 'origin',
+                            borderWidth: 1.5,
+                            pointRadius: 0,
+                            pointHoverRadius: 3
+                        }
+                    ]
+                },
+                options: chartConfig
+            });
+        }
+
+        function renderDiskChart(history) {
+            const ctx = document.getElementById('disk-chart').getContext('2d');
+            if (diskChart) diskChart.destroy();
+
+            diskChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: history.map(h => formatChartDate(h.timestamp)),
+                    datasets: [{
+                        label: 'Disk',
+                        metaUnit: 'percent',
+                        data: history.map(h => h.disk_percent),
+                        borderColor: '#5bc0de',
+                        backgroundColor: 'rgba(91, 192, 222, 0.4)',
+                        fill: 'origin',
+                        borderWidth: 1.5,
+                        pointRadius: 0,
+                        pointHoverRadius: 3
+                    }]
+                },
+                options: { ...chartConfig, scales: { ...chartConfig.scales, y: { ...chartConfig.scales.y, max: 100 } } }
+            });
+        }
+
+        function normalizeTimestamp(ts) {
+            if (!ts) return '';
+            const s = String(ts);
+            // If already includes timezone (Z or +hh:mm), keep as-is; otherwise treat as UTC.
+            const hasTz = /[zZ]$/.test(s) || /[+-]\d{2}:?\d{2}$/.test(s);
+            return hasTz ? s : s + 'Z';
+        }
+
+        function parseTimestamp(ts) {
+            const s = normalizeTimestamp(ts);
+            return s ? new Date(s) : null;
+        }
+
+        // Format chart labels (use real timestamps; ticks will format for display)
+        function formatChartDate(timestamp) {
+            return normalizeTimestamp(timestamp);
+        }
+
+        function updateAllStats(history) {
+            const cpuValues = history.map(h => h.cpu_percent).filter(v => v != null);
+            const ramValues = history.map(h => h.ram_percent).filter(v => v != null);
+            const diskValues = history.map(h => h.disk_percent).filter(v => v != null);
+
+            const netInBytesPerSec = history.map(h => (typeof h.network_in === 'number' && !Number.isNaN(h.network_in)) ? h.network_in : 0);
+            const netOutBytesPerSec = history.map(h => (typeof h.network_out === 'number' && !Number.isNaN(h.network_out)) ? h.network_out : 0);
+            const timesMs = history.map(h => {
+                const d = parseTimestamp(h.timestamp);
+                return d ? d.getTime() : 0;
+            });
+
+            const formatBitsPerSec = (bitsPerSec) => {
+                const v = Math.max(0, bitsPerSec || 0);
+                const kbps = v / 1000;
+                if (kbps < 1000) return `${Math.round(kbps)}kbps`;
+                const mbps = kbps / 1000;
+                if (mbps < 1000) return `${mbps.toFixed(2)}Mbps`;
+                const gbps = mbps / 1000;
+                return `${gbps.toFixed(2)}Gbps`;
+            };
+
+            const formatBytes = (bytes) => {
+                const v = Math.max(0, bytes || 0);
+                const kib = v / 1024;
+                if (kib < 1024) return `${kib.toFixed(0)}KiB`;
+                const mib = kib / 1024;
+                if (mib < 1024) return `${mib.toFixed(2)}MiB`;
+                const gib = mib / 1024;
+                if (gib < 1024) return `${gib.toFixed(2)}GiB`;
+                const tib = gib / 1024;
+                return `${tib.toFixed(2)}TiB`;
+            };
+
+            if (cpuValues.length) {
+                document.getElementById('cpu-current').textContent = cpuValues[cpuValues.length - 1].toFixed(2) + '%';
+                document.getElementById('cpu-avg').textContent = (cpuValues.reduce((a, b) => a + b, 0) / cpuValues.length).toFixed(2) + '%';
+                document.getElementById('cpu-max').textContent = Math.max(...cpuValues).toFixed(2) + '%';
+            }
+
+            if (ramValues.length) {
+                document.getElementById('ram-current').textContent = ramValues[ramValues.length - 1].toFixed(2) + '%';
+                document.getElementById('ram-avg').textContent = (ramValues.reduce((a, b) => a + b, 0) / ramValues.length).toFixed(2) + '%';
+                document.getElementById('ram-max').textContent = Math.max(...ramValues).toFixed(2) + '%';
+            }
+
+            // Network stats (values expected in bytes/sec)
+            if (netInBytesPerSec.length && netOutBytesPerSec.length) {
+                const curIn = netInBytesPerSec[netInBytesPerSec.length - 1];
+                const curOut = netOutBytesPerSec[netOutBytesPerSec.length - 1];
+
+                const avgIn = netInBytesPerSec.reduce((a, b) => a + b, 0) / netInBytesPerSec.length;
+                const avgOut = netOutBytesPerSec.reduce((a, b) => a + b, 0) / netOutBytesPerSec.length;
+
+                const maxIn = Math.max(...netInBytesPerSec);
+                const maxOut = Math.max(...netOutBytesPerSec);
+
+                // Integrate rates to approximate totals
+                let totalInBytes = 0;
+                let totalOutBytes = 0;
+                for (let i = 1; i < history.length; i++) {
+                    const dt = (timesMs[i] - timesMs[i - 1]) / 1000;
+                    if (!dt || dt <= 0) continue;
+                    const inAvg = (netInBytesPerSec[i] + netInBytesPerSec[i - 1]) / 2;
+                    const outAvg = (netOutBytesPerSec[i] + netOutBytesPerSec[i - 1]) / 2;
+                    totalInBytes += inAvg * dt;
+                    totalOutBytes += outAvg * dt;
+                }
+
+                document.getElementById('network-current').textContent = formatBitsPerSec((curIn + curOut) * 8);
+                document.getElementById('network-current-detail').textContent = `In: ${formatBitsPerSec(curIn * 8)} | Out: ${formatBitsPerSec(curOut * 8)}`;
+
+                document.getElementById('network-avg').textContent = formatBitsPerSec((avgIn + avgOut) * 8);
+                document.getElementById('network-avg-detail').textContent = `In: ${formatBitsPerSec(avgIn * 8)} | Out: ${formatBitsPerSec(avgOut * 8)}`;
+
+                document.getElementById('network-total').textContent = formatBytes(totalInBytes + totalOutBytes);
+                document.getElementById('network-total-detail').textContent = `In: ${formatBytes(totalInBytes)} | Out: ${formatBytes(totalOutBytes)}`;
+
+                document.getElementById('network-max').textContent = formatBitsPerSec((maxIn + maxOut) * 8);
+                document.getElementById('network-max-detail').textContent = `In: ${formatBitsPerSec(maxIn * 8)} | Out: ${formatBitsPerSec(maxOut * 8)}`;
+            }
+
+            // Disk stats
+            if (diskValues.length) {
+                document.getElementById('disk-current').textContent = diskValues[diskValues.length - 1].toFixed(2) + '%';
+                document.getElementById('disk-avg').textContent = (diskValues.reduce((a, b) => a + b, 0) / diskValues.length).toFixed(2) + '%';
+                document.getElementById('disk-max').textContent = Math.max(...diskValues).toFixed(2) + '%';
+            }
+        }
+
+        init();
+        
+        function refreshServerChartsForMode() {
+            if (!isServerAgentContext()) return;
+            if (historyMode === 'recent') {
+                loadServerHistoryHours(currentTimeRange);
+            } else if (selectedMonthRange) {
+                loadServerHistoryRange(selectedMonthRange.startISO, selectedMonthRange.endISO);
+            }
+        }
+
+        // Auto-refresh every 60 seconds
+        setInterval(() => {
+            if (document.visibilityState !== 'visible') return;
+            refreshMonitorDetails();
+            refreshServerChartsForMode();
+        }, 60000);
+
+        // Recompute relative timestamps every second for precise "x sec ago" display.
+        setInterval(() => {
+            if (document.visibilityState !== 'visible') return;
+            updateRelativeTimes();
+        }, 1000);
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                refreshMonitorDetails();
+                refreshServerChartsForMode();
+                updateRelativeTimes();
+            }
+        });
+    </script>
+</body>
+
+</html>

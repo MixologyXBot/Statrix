@@ -1,0 +1,119 @@
+/* ==================== SIDEBAR ENHANCEMENTS ==================== */
+
+/* Nav Count Badges */
+.nav-count {
+    margin-left: auto;
+    padding: 2px 8px;
+    background: rgba(68, 182, 174, 0.2);
+    color: var(--primary);
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 10px;
+    min-width: 20px;
+    text-align: center;
+    transition: var(--transition);
+}
+
+.nav-item:hover .nav-count {
+    background: rgba(68, 182, 174, 0.3);
+}
+
+.nav-item.active .nav-count {
+    background: var(--primary);
+    color: var(--bg-dark);
+}
+
+/* Nav Section Styling */
+.nav-section {
+    margin-bottom: 0.5rem;
+}
+
+.nav-section-title {
+    padding: 0.5rem 1.25rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+}
+
+/* Add Monitor Button in Sidebar */
+.sidebar-add-monitor {
+    margin: 0.5rem 1rem;
+    padding: 0.5rem;
+    background: rgba(68, 182, 174, 0.15);
+    border: 1px solid var(--primary);
+    border-radius: var(--radius-sm);
+    color: var(--primary);
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-align: center;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.sidebar-add-monitor:hover {
+    background: var(--primary);
+    color: var(--bg-dark);
+}
+
+/* Account Section Enhancements */
+.nav-section.account-section {
+    margin-top: auto;
+    border-top: 1px solid var(--border-color);
+    padding-top: 0.5rem;
+}
+
+/* Support Badge */
+.nav-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    padding: 2px 6px;
+    background: #e74c3c;
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 700;
+    border-radius: 8px;
+    min-width: 16px;
+    text-align: center;
+}
+
+.nav-item {
+    position: relative;
+}
+
+/* Quick Actions */
+.sidebar-quick-actions {
+    padding: 0.5rem 1rem;
+    display: flex;
+    gap: 0.5rem;
+}
+
+.sidebar-quick-actions .btn {
+    flex: 1;
+    padding: 0.4rem;
+    font-size: 0.75rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    text-align: center;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.sidebar-quick-actions .btn:hover {
+    background: rgba(68, 182, 174, 0.1);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .nav-count {
+        padding: 1px 6px;
+        font-size: 0.65rem;
+        min-width: 18px;
+    }
+}

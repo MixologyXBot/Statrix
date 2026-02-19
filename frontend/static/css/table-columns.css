@@ -1,0 +1,187 @@
+/* ==================== TABLE COLUMNS ==================== */
+
+/* Table Column Styles */
+.data-table th.col-up-down {
+    width: 120px;
+}
+
+.data-table td.col-up-down {
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.data-table th.col-added {
+    width: 100px;
+}
+
+.data-table td.col-added {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.data-table th.col-check {
+    width: 80px;
+}
+
+.data-table td.col-check {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+/* Up/Down Status Column */
+.col-up-down .fas.fa-sort {
+    font-size: 0.7rem;
+    margin-left: 4px;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.col-up-down .fas.fa-sort:hover {
+    color: var(--primary);
+}
+
+/* Enhanced Uptime Cell */
+.uptime-cell-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+}
+
+.uptime-percent {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #fff;
+}
+
+.mini-uptime-bar {
+    display: flex;
+    gap: 2px;
+}
+
+/* Monitor Name Info */
+.monitor-name-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.monitor-name-text {
+    font-weight: 600;
+    color: #fff;
+    font-size: 0.9rem;
+}
+
+.monitor-name-text:hover {
+    color: var(--primary);
+}
+
+.monitor-sub-text {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    word-break: break-all;
+}
+
+/* Server Metrics Inline */
+.server-metrics-inline {
+    display: flex;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+/* Status Badge Inline */
+.status-badge-inline {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-badge-inline.status-up {
+    background: rgba(68, 182, 174, 0.2);
+    color: #44b6ae;
+}
+
+.status-badge-inline.status-down {
+    background: rgba(231, 76, 60, 0.2);
+    color: #e74c3c;
+}
+
+.status-badge-inline.status-unknown {
+    background: rgba(127, 140, 141, 0.2);
+    color: #7f8c8d;
+}
+
+/* Type Badge */
+.type-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    background: rgba(0, 0, 0, 0.2);
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    gap: 4px;
+}
+
+.btn-icon {
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition);
+    font-size: 0.85rem;
+}
+
+.btn-icon:hover {
+    background: rgba(68, 182, 174, 0.1);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.btn-icon.btn-danger-icon:hover {
+    background: rgba(231, 76, 60, 0.1);
+    border-color: #e74c3c;
+    color: #e74c3c;
+}
+
+/* Responsive Table */
+@media (max-width: 1200px) {
+    .data-table th.col-up-down,
+    .data-table th.col-added,
+    .data-table th.col-check {
+        display: none;
+    }
+    
+    .data-table td.col-up-down,
+    .data-table td.col-added,
+    .data-table td.col-check {
+        display: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .data-table th.col-type,
+    .data-table th.col-status {
+        display: none;
+    }
+    
+    .data-table td.col-type,
+    .data-table td.col-status {
+        display: none;
+    }
+}

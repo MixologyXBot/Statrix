@@ -1,0 +1,77 @@
+name: statrix
+version: "1.0"
+services:
+  - name: web
+    type: web
+    build:
+      type: dockerfile
+      dockerfile: Dockerfile
+    env:
+      - key: DATABASE_URL
+        value: "{{DATABASE_URL}}"
+      - key: ENCRYPTION_KEY
+        value: "{{ENCRYPTION_KEY}}"
+      - key: JWT_SECRET_KEY
+        value: "{{JWT_SECRET_KEY}}"
+      - key: OWNER_EMAIL
+        value: "{{OWNER_EMAIL}}"
+      - key: OWNER_PASSWORD
+        value: "{{OWNER_PASSWORD}}"
+      - key: OWNER_NAME
+        value: "{{OWNER_NAME|Admin}}"
+      - key: CORS_ORIGINS
+        value: "{{CORS_ORIGINS|[\"http://localhost:8000\"]}}"
+      - key: SMTP_SERVER
+        value: "{{SMTP_SERVER|smtp.gmail.com}}"
+      - key: SMTP_PORT
+        value: "{{SMTP_PORT|587}}"
+      - key: SMTP_USER
+        value: "{{SMTP_USER}}"
+      - key: SMTP_PASS
+        value: "{{SMTP_PASS}}"
+      - key: NOTIFICATION_EMAIL
+        value: "{{NOTIFICATION_EMAIL}}"
+      - key: APP_URL
+        value: "{{APP_URL|http://localhost:8000}}"
+      - key: COMPANY_NAME
+        value: "{{COMPANY_NAME|Statrix}}"
+      - key: APP_NAME
+        value: "{{APP_NAME|Statrix}}"
+      - key: WEB_CONCURRENCY
+        value: "1"
+      - key: CACHE_BACKEND
+        value: "redis"
+      - key: REDIS_URL
+        value: "{{REDIS_URL}}"
+      - key: CACHE_FAIL_FAST
+        value: "true"
+      - key: CACHE_WARMUP_FULL
+        value: "true"
+      - key: CACHE_KEY_PREFIX
+        value: "{{CACHE_KEY_PREFIX|statrix:v1}}"
+      - key: CACHE_WARMUP_BATCH_SIZE
+        value: "{{CACHE_WARMUP_BATCH_SIZE|500}}"
+      - key: CACHE_REBUILD_INTERVAL_SECONDS
+        value: "{{CACHE_REBUILD_INTERVAL_SECONDS|30}}"
+      - key: MONITOR_LEADER_LOCK_ENABLED
+        value: "true"
+      - key: MONITOR_LEADER_LOCK_TTL_SECONDS
+        value: "{{MONITOR_LEADER_LOCK_TTL_SECONDS|90}}"
+      - key: SMTP_FROM
+        value: "{{SMTP_FROM|Statrix Alerts <noreply@example.com>}}"
+    ports:
+      - port: 8000
+        protocol: HTTP
+    routes:
+      - path: /
+        port: 8000
+    health_check:
+      http_path: /health
+    instance_type:
+      name: nano
+      regions:
+        - fra # Frankfurt
+        - PAR # Paris
+    scaling:
+      min: 1
+      max: 1
