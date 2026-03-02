@@ -1,6 +1,6 @@
-/* ==================== PAGINATION & TABLE CONTROLS ==================== */
+/* This file is a part of Statrix */
+/* Coding : Priyanshu Dey [@HellFireDevil18] */
 
-/* Table Toolbar Enhancement */
 .table-toolbar {
     display: flex;
     justify-content: space-between;
@@ -26,7 +26,6 @@
     flex-wrap: wrap;
 }
 
-/* View Dropdown */
 .table-view-dropdown {
     display: flex;
     align-items: center;
@@ -53,7 +52,6 @@
     border-color: var(--primary);
 }
 
-/* Table Info */
 .table-info {
     font-size: 0.85rem;
     color: var(--text-muted);
@@ -65,7 +63,6 @@
     font-weight: 600;
 }
 
-/* Pagination */
 .pagination-container {
     display: flex;
     align-items: center;
@@ -123,7 +120,6 @@
     color: var(--text-muted);
 }
 
-/* Search Box Enhancement */
 .search-box {
     position: relative;
     display: flex;
@@ -167,7 +163,6 @@
     color: var(--primary);
 }
 
-/* Bulk Actions Dropdown */
 .table-bulk-actions {
     position: relative;
 }
@@ -233,28 +228,27 @@
     text-align: center;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
     .table-toolbar {
         flex-direction: column;
         align-items: stretch;
     }
-    
+
     .table-toolbar-left,
     .table-toolbar-right {
         width: 100%;
         justify-content: space-between;
     }
-    
+
     .search-box input {
         min-width: 100%;
     }
-    
+
     .pagination-container {
         flex-wrap: wrap;
         justify-content: center;
     }
-    
+
     .table-view-dropdown {
         flex-wrap: wrap;
     }

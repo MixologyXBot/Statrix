@@ -8,7 +8,7 @@ from typing import Any
 from redis.asyncio import Redis
 
 from ..utils.time import utcnow
-from .base import CacheBackend, SnapshotLoader
+from .base import CacheBackend, SnapshotLoader, coerce_series_score
 from .serializer import dumps, loads
 
 
@@ -74,28 +74,7 @@ class RedisCacheBackend(CacheBackend):
 
     @staticmethod
     def _coerce_score(item: dict[str, Any], series_kind: str) -> float:
-        if series_kind == "uptime_checks":
-            ts = item.get("checked_at")
-        elif series_kind == "server_history":
-            ts = item.get("timestamp")
-        elif series_kind == "heartbeat_pings":
-            ts = item.get("pinged_at")
-        elif series_kind == "monitor_minutes":
-            ts = item.get("minute")
-        elif series_kind == "maintenance_events":
-            ts = item.get("start_at")
-        else:
-            ts = None
-        if isinstance(ts, datetime):
-            return ts.timestamp()
-        if isinstance(ts, (int, float)):
-            return float(ts)
-        if isinstance(ts, str):
-            try:
-                return datetime.fromisoformat(ts).timestamp()
-            except Exception:
-                return 0.0
-        return 0.0
+        return coerce_series_score(item, series_kind)
 
     async def connect(self) -> None:
         self.client = Redis.from_url(
@@ -126,66 +105,36 @@ class RedisCacheBackend(CacheBackend):
             self.last_ping_error = f"{type(exc).__name__}: {exc}"
             return False
 
-    async def _clear_prefix(self) -> None:
-        if self.client is None:
-            return
-        cursor = 0
-        pattern = self._k("*")
-        while True:
-            cursor, keys = await self.client.scan(cursor=cursor, match=pattern, count=1000)
-            if keys:
-                await self.client.delete(*keys)
-            if cursor == 0:
-                break
-
-    async def warmup_from_snapshot(self, snapshot: dict[str, Any]) -> None:
+    async def write_series_kind(
+        self,
+        series_kind: str,
+        grouped: dict[Any, list[dict[str, Any]]],
+    ) -> int:
         if self.client is None:
             raise RuntimeError("Redis cache backend not connected")
-
-        await self._clear_prefix()
-
         pipe = self.client.pipeline(transaction=False)
         pending = 0
+        count = 0
 
-        for kind, items in (snapshot.get("entities") or {}).items():
-            entity_key = self._entity_key(kind)
-            for entity_id, payload in (items or {}).items():
-                pipe.hset(entity_key, str(entity_id), dumps(payload))
-                pending += 1
-                if pending >= self.warmup_batch_size:
-                    await pipe.execute()
-                    pending = 0
-
-        for index_name, index_items in (snapshot.get("indexes") or {}).items():
-            index_key = self._index_key(index_name)
-            for index_key_name, index_value in (index_items or {}).items():
-                pipe.hset(index_key, str(index_key_name), str(index_value))
-                pending += 1
-                if pending >= self.warmup_batch_size:
-                    await pipe.execute()
-                    pending = 0
-
-        series_items = snapshot.get("series") or {}
-        for series_kind, grouped in series_items.items():
-            if series_kind == "maintenance_events":
-                for composite_key, rows in (grouped or {}).items():
-                    if isinstance(composite_key, tuple) and len(composite_key) == 2:
-                        monitor_type, monitor_id = composite_key
-                    else:
-                        monitor_type, monitor_id = str(composite_key).split(":", 1)
-                    for row in rows or []:
-                        member_id = self._coerce_member_id(series_kind, row)
-                        score = self._coerce_score(row, series_kind)
-                        zkey = self._series_zkey(series_kind, str(monitor_id), monitor_type=str(monitor_type))
-                        obj_key = self._series_obj_key(series_kind, str(monitor_id))
-                        pipe.zadd(zkey, {member_id: score})
-                        pipe.hset(obj_key, member_id, dumps(row))
-                        pending += 2
-                        if pending >= self.warmup_batch_size:
-                            await pipe.execute()
-                            pending = 0
-                continue
-
+        if series_kind == "maintenance_events":
+            for composite_key, rows in (grouped or {}).items():
+                if isinstance(composite_key, tuple) and len(composite_key) == 2:
+                    monitor_type, monitor_id = composite_key
+                else:
+                    monitor_type, monitor_id = str(composite_key).split(":", 1)
+                for row in rows or []:
+                    member_id = self._coerce_member_id(series_kind, row)
+                    score = self._coerce_score(row, series_kind)
+                    zkey = self._series_zkey(series_kind, str(monitor_id), monitor_type=str(monitor_type))
+                    obj_key = self._series_obj_key(series_kind, str(monitor_id))
+                    pipe.zadd(zkey, {member_id: score})
+                    pipe.hset(obj_key, member_id, dumps(row))
+                    pending += 2
+                    count += 1
+                    if pending >= self.warmup_batch_size:
+                        await pipe.execute()
+                        pending = 0
+        else:
             for monitor_id, rows in (grouped or {}).items():
                 monitor_id_s = str(monitor_id)
                 zkey = self._series_zkey(series_kind, monitor_id_s)
@@ -196,9 +145,94 @@ class RedisCacheBackend(CacheBackend):
                     pipe.zadd(zkey, {member_id: score})
                     pipe.hset(obj_key, member_id, dumps(row))
                     pending += 2
+                    count += 1
                     if pending >= self.warmup_batch_size:
                         await pipe.execute()
                         pending = 0
+
+        if pending > 0:
+            await pipe.execute()
+        return count
+
+    async def _write_warmup_meta(self, counts: dict[str, int]) -> None:
+        if self.client is None:
+            return
+        meta = dict(counts)
+        meta["total_items"] = sum(counts.values())
+        pipe = self.client.pipeline(transaction=False)
+        pipe.set(self._k("meta:counts"), dumps(meta))
+        pipe.set(self._k("meta:loaded_at"), utcnow().isoformat())
+        pipe.set(self._k("meta:version"), "1")
+        await pipe.execute()
+
+    async def warmup_from_snapshot(self, snapshot: dict[str, Any]) -> None:
+        if self.client is None:
+            raise RuntimeError("Redis cache backend not connected")
+
+        pipe = self.client.pipeline(transaction=False)
+        pending = 0
+
+        # Entities & indexes: build into staging keys, then RENAME atomically.
+        # This avoids the empty-hash window that caused 503s during resync.
+        staging_renames: list[tuple[str, str]] = []
+
+        empty_finals: list[str] = []
+
+        for kind, items in (snapshot.get("entities") or {}).items():
+            final_key = self._entity_key(kind)
+            staging_key = final_key + ":staging"
+            pipe.delete(staging_key)
+            pending += 1
+            has_items = False
+            for entity_id, payload in (items or {}).items():
+                pipe.hset(staging_key, str(entity_id), dumps(payload))
+                pending += 1
+                has_items = True
+                if pending >= self.warmup_batch_size:
+                    await pipe.execute()
+                    pending = 0
+            if has_items:
+                staging_renames.append((staging_key, final_key))
+            else:
+                empty_finals.append(final_key)
+
+        for index_name, index_items in (snapshot.get("indexes") or {}).items():
+            final_key = self._index_key(index_name)
+            staging_key = final_key + ":staging"
+            pipe.delete(staging_key)
+            pending += 1
+            has_items = False
+            for index_key_name, index_value in (index_items or {}).items():
+                pipe.hset(staging_key, str(index_key_name), str(index_value))
+                pending += 1
+                has_items = True
+                if pending >= self.warmup_batch_size:
+                    await pipe.execute()
+                    pending = 0
+            if has_items:
+                staging_renames.append((staging_key, final_key))
+            else:
+                empty_finals.append(final_key)
+
+        # Flush remaining staging writes, then RENAME all at once.
+        if pending > 0:
+            await pipe.execute()
+            pending = 0
+        for staging_key, final_key in staging_renames:
+            pipe.rename(staging_key, final_key)
+            pending += 1
+        # For empty kinds, just delete the final key (no staging key to rename).
+        for final_key in empty_finals:
+            pipe.delete(final_key)
+            pending += 1
+        if pending > 0:
+            await pipe.execute()
+
+        # Series: additive write via write_series_kind.
+        series_items = snapshot.get("series") or {}
+        series_counts: dict[str, int] = {}
+        for series_kind, grouped in series_items.items():
+            series_counts[series_kind] = await self.write_series_kind(series_kind, grouped)
 
         counts = {
             "users": len((snapshot.get("entities") or {}).get("users", {})),
@@ -206,23 +240,9 @@ class RedisCacheBackend(CacheBackend):
             "server": len((snapshot.get("entities") or {}).get("server", {})),
             "heartbeat": len((snapshot.get("entities") or {}).get("heartbeat", {})),
             "incidents": len((snapshot.get("entities") or {}).get("incidents", {})),
-            "uptime_checks": sum(len(v) for v in (series_items.get("uptime_checks") or {}).values()),
-            "server_history": sum(len(v) for v in (series_items.get("server_history") or {}).values()),
-            "heartbeat_pings": sum(len(v) for v in (series_items.get("heartbeat_pings") or {}).values()),
-            "maintenance_events": sum(len(v) for v in (series_items.get("maintenance_events") or {}).values()),
-            "monitor_minutes": sum(len(v) for v in (series_items.get("monitor_minutes") or {}).values()),
+            **series_counts,
         }
-        counts["total_items"] = sum(counts.values())
-        meta_counts_key = self._k("meta:counts")
-        meta_loaded_key = self._k("meta:loaded_at")
-        meta_version_key = self._k("meta:version")
-        pipe.set(meta_counts_key, dumps(counts))
-        pipe.set(meta_loaded_key, utcnow().isoformat())
-        pipe.set(meta_version_key, "1")
-        pending += 3
-
-        if pending > 0:
-            await pipe.execute()
+        await self._write_warmup_meta(counts)
 
     async def get_entity(self, kind: str, entity_id: str) -> dict[str, Any] | None:
         if self.client is None:
@@ -315,6 +335,91 @@ class RedisCacheBackend(CacheBackend):
             if isinstance(payload, dict):
                 rows.append(payload)
         return rows
+
+    async def tail_series(
+        self,
+        series_kind: str,
+        monitor_id: str,
+        count: int,
+        monitor_type: str | None = None,
+    ) -> list[dict[str, Any]]:
+        if self.client is None:
+            return []
+        monitor_id_s = str(monitor_id)
+        zkey = self._series_zkey(series_kind, monitor_id_s, monitor_type=monitor_type)
+        obj_key = self._series_obj_key(series_kind, monitor_id_s)
+        ids = await self.client.zrevrange(zkey, 0, count - 1)
+        if not ids:
+            return []
+        raw_rows = await self.client.hmget(obj_key, ids)
+        rows: list[dict[str, Any]] = []
+        for raw in raw_rows:
+            payload = loads(raw)
+            if isinstance(payload, dict):
+                rows.append(payload)
+        return rows
+
+    async def delete_series_group(
+        self,
+        series_kind: str,
+        monitor_id: str,
+        monitor_type: str | None = None,
+    ) -> None:
+        if self.client is None:
+            return
+        monitor_id_s = str(monitor_id)
+        zkey = self._series_zkey(series_kind, monitor_id_s, monitor_type=monitor_type)
+        obj_key = self._series_obj_key(series_kind, monitor_id_s)
+        ids = await self.client.zrange(zkey, 0, -1)
+        if ids:
+            pipe = self.client.pipeline(transaction=False)
+            pipe.delete(zkey)
+            for member_id in ids:
+                pipe.hdel(obj_key, member_id)
+            await pipe.execute()
+        else:
+            await self.client.delete(zkey)
+
+    async def delete_series_range(
+        self,
+        series_kind: str,
+        monitor_id: str,
+        max_score: float,
+        monitor_type: str | None = None,
+    ) -> int:
+        if self.client is None:
+            return 0
+        monitor_id_s = str(monitor_id)
+        zkey = self._series_zkey(series_kind, monitor_id_s, monitor_type=monitor_type)
+        obj_key = self._series_obj_key(series_kind, monitor_id_s)
+        ids = await self.client.zrangebyscore(zkey, min="-inf", max=max_score)
+        if not ids:
+            return 0
+        pipe = self.client.pipeline(transaction=False)
+        pipe.zremrangebyscore(zkey, min="-inf", max=max_score)
+        for member_id in ids:
+            pipe.hdel(obj_key, member_id)
+        await pipe.execute()
+        return len(ids)
+
+    async def update_series_item(
+        self,
+        series_kind: str,
+        monitor_id: str,
+        item: dict[str, Any],
+        score: float,
+        monitor_type: str | None = None,
+    ) -> None:
+        if self.client is None:
+            raise RuntimeError("Redis client not connected")
+        monitor_id_s = str(monitor_id)
+        member_id = self._coerce_member_id(series_kind, item)
+        zkey = self._series_zkey(series_kind, monitor_id_s, monitor_type=monitor_type)
+        obj_key = self._series_obj_key(series_kind, monitor_id_s)
+        pipe = self.client.pipeline(transaction=False)
+        pipe.zadd(zkey, {member_id: float(score)})
+        pipe.hset(obj_key, member_id, dumps(item))
+        await pipe.execute()
 
     async def rebuild_from_db(self, loader_fn: SnapshotLoader) -> None:
         snapshot = await loader_fn()

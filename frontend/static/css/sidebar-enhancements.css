@@ -1,6 +1,6 @@
-/* ==================== SIDEBAR ENHANCEMENTS ==================== */
+/* This file is a part of Statrix */
+/* Coding : Priyanshu Dey [@HellFireDevil18] */
 
-/* Nav Count Badges */
 .nav-count {
     margin-left: auto;
     padding: 2px 8px;
@@ -23,7 +23,6 @@
     color: var(--bg-dark);
 }
 
-/* Nav Section Styling */
 .nav-section {
     margin-bottom: 0.5rem;
 }
@@ -37,7 +36,6 @@
     color: var(--text-muted);
 }
 
-/* Add Monitor Button in Sidebar */
 .sidebar-add-monitor {
     margin: 0.5rem 1rem;
     padding: 0.5rem;
@@ -57,14 +55,12 @@
     color: var(--bg-dark);
 }
 
-/* Account Section Enhancements */
 .nav-section.account-section {
     margin-top: auto;
     border-top: 1px solid var(--border-color);
     padding-top: 0.5rem;
 }
 
-/* Support Badge */
 .nav-badge {
     position: absolute;
     top: 8px;
@@ -83,7 +79,6 @@
     position: relative;
 }
 
-/* Quick Actions */
 .sidebar-quick-actions {
     padding: 0.5rem 1rem;
     display: flex;
@@ -109,7 +104,6 @@
     color: var(--primary);
 }
 
-/* Responsive */
 @media (max-width: 768px) {
     .nav-count {
         padding: 1px 6px;

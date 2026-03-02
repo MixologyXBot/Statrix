@@ -49,7 +49,7 @@ async def heartbeat_ping(s: str = Query(..., description="Heartbeat Monitor SID"
             target=monitor.get("sid") or "",
         )
 
-        logger.info(
+        logger.debug(
             "Heartbeat ping received for: %s (SID: %s)",
             monitor["name"],
             s,

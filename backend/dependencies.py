@@ -45,17 +45,3 @@ async def get_current_admin(
             status_code=status.HTTP_403_FORBIDDEN, detail="Admin privileges required"
         )
     return current_user
-
-
-async def get_optional_user(
-    credentials: HTTPAuthorizationCredentials | None = Depends(
-        HTTPBearer(auto_error=False)
-    ),
-) -> dict[str, Any] | None:
-    if credentials is None:
-        return None
-
-    try:
-        return await get_current_user(credentials)
-    except HTTPException:
-        return None

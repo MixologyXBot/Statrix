@@ -1,6 +1,7 @@
 # This file is a part of Statrix
 # Coding : Priyanshu Dey [@HellFireDevil18]
 
+import asyncio
 import logging
 import os
 from datetime import datetime
@@ -64,6 +65,11 @@ class CacheService:
     def _k(self, suffix: str) -> str:
         return f"{self.key_prefix}:{suffix}"
 
+    def _ping_error_detail(self) -> str | None:
+        if isinstance(self.backend, RedisCacheBackend):
+            return self.backend.last_ping_error
+        return None
+
     async def connect(self) -> None:
         await self.backend.connect()
         self.connected = await self.backend.ping()
@@ -123,30 +129,49 @@ class CacheService:
             logger.exception("Failed to persist unhealthy cache metadata")
 
     async def mark_healthy(self) -> None:
+        self.connected = True
         self.healthy = True
         self.last_error = None
         now = utcnow().isoformat()
         self.loaded_at = self.loaded_at or now
         self._last_ping_ok_at = utcnow()
-        await self.backend.set_json(self._k("meta:healthy"), {"healthy": True, "updated_at": now})
-        await self.backend.delete_key(self._k("meta:last_error"))
+        try:
+            await self.backend.set_json(self._k("meta:healthy"), {"healthy": True, "updated_at": now})
+            await self.backend.delete_key(self._k("meta:last_error"))
+        except Exception:
+            logger.exception("Failed to persist healthy cache metadata")
 
     async def ensure_available(self) -> None:
         if not self.fail_fast:
             return
-        if not self.connected:
-            raise CacheUnavailableError("Cache backend is not connected")
-        if not self.healthy:
-            raise CacheUnavailableError(self.last_error or "Cache backend is unhealthy")
+
         now = utcnow()
-        if self._last_ping_ok_at and (now - self._last_ping_ok_at).total_seconds() < self._ping_check_interval_seconds:
+        if (
+            self.connected
+            and self.healthy
+            and self._last_ping_ok_at
+            and (now - self._last_ping_ok_at).total_seconds() < self._ping_check_interval_seconds
+        ):
             return
+
         ok = await self.backend.ping()
         if not ok:
-            self.connected = False
-            await self.mark_unhealthy("Cache ping failed")
-            raise CacheUnavailableError("Cache backend ping failed")
-        self._last_ping_ok_at = utcnow()
+            # One quick retry to avoid flapping unhealthy on transient network blips.
+            await asyncio.sleep(0.15)
+            ok = await self.backend.ping()
+
+        if ok:
+            self.connected = True
+            self._last_ping_ok_at = utcnow()
+            if not self.healthy:
+                await self.mark_healthy()
+            return
+
+        detail = self._ping_error_detail()
+        error = "Cache ping failed" + (f": {detail}" if detail else "")
+        self.connected = False
+        await self.mark_unhealthy(error)
+        raise CacheUnavailableError(error)
 
     async def stats(self) -> dict[str, Any]:
         backend_stats = await self.backend.stats()
@@ -189,9 +214,152 @@ class CacheService:
         set_key = self._status_keys_set()
         keys = await self.backend.get_set_members(set_key)
         for cache_key in keys:
+            # Keep stale snapshots so public status can serve a fallback while
+            # a fresh payload is being rebuilt.
             await self.backend.delete_key(self._status_live_key(cache_key))
-            await self.backend.delete_key(self._status_stale_key(cache_key))
             await self.backend.remove_set_member(set_key, cache_key)
+
+    async def get_prefixed_json(self, suffix: str) -> dict[str, Any] | None:
+        await self.ensure_available()
+        return await self.backend.get_json(self._k(suffix))
+
+    async def set_prefixed_json(
+        self,
+        suffix: str,
+        payload: dict[str, Any],
+        ttl_seconds: int | None = None,
+    ) -> None:
+        await self.ensure_available()
+        await self.backend.set_json(self._k(suffix), payload, ttl_seconds=ttl_seconds)
+
+    async def delete_prefixed_key(self, suffix: str) -> None:
+        await self.ensure_available()
+        await self.backend.delete_key(self._k(suffix))
+
+    async def add_prefixed_set_member(self, suffix: str, member: str) -> None:
+        await self.ensure_available()
+        await self.backend.add_set_member(self._k(suffix), str(member))
+
+    async def remove_prefixed_set_member(self, suffix: str, member: str) -> None:
+        await self.ensure_available()
+        await self.backend.remove_set_member(self._k(suffix), str(member))
+
+    async def get_prefixed_set_members(self, suffix: str) -> set[str]:
+        await self.ensure_available()
+        return await self.backend.get_set_members(self._k(suffix))
+
+    # ── Staged warmup helpers ─────────────────────────────────────────
+
+    async def write_series_kind(
+        self,
+        series_kind: str,
+        grouped: dict,
+    ) -> int:
+        await self.ensure_available()
+        return await self.backend.write_series_kind(series_kind, grouped)
+
+    async def write_warmup_meta(self, counts: dict[str, int]) -> None:
+        if isinstance(self.backend, RedisCacheBackend):
+            await self.backend._write_warmup_meta(counts)
+
+    # ── Entity operations ──────────────────────────────────────────────
+
+    async def get_entity(self, kind: str, entity_id: str) -> dict[str, Any] | None:
+        await self.ensure_available()
+        return await self.backend.get_entity(kind, str(entity_id))
+
+    async def list_entities(self, kind: str) -> list[dict[str, Any]]:
+        await self.ensure_available()
+        return await self.backend.list_entities(kind)
+
+    async def set_entity(self, kind: str, entity_id: str, value: dict[str, Any]) -> None:
+        await self.ensure_available()
+        await self.backend.set_entity(kind, str(entity_id), value)
+
+    async def delete_entity(self, kind: str, entity_id: str) -> None:
+        await self.ensure_available()
+        await self.backend.delete_entity(kind, str(entity_id))
+
+    # ── Index operations ──────────────────────────────────────────────
+
+    async def get_index(self, index: str, key: str) -> str | None:
+        await self.ensure_available()
+        return await self.backend.get_index(index, str(key))
+
+    async def set_index(self, index: str, key: str, value: str) -> None:
+        await self.ensure_available()
+        await self.backend.set_index(index, str(key), str(value))
+
+    async def delete_index(self, index: str, key: str) -> None:
+        await self.ensure_available()
+        await self.backend.delete_index(index, str(key))
+
+    # ── Series operations ─────────────────────────────────────────────
+
+    async def append_series(
+        self,
+        series_kind: str,
+        monitor_id: str,
+        item: dict[str, Any],
+        score: float,
+        monitor_type: str | None = None,
+    ) -> None:
+        await self.ensure_available()
+        await self.backend.append_series(series_kind, str(monitor_id), item, score, monitor_type=monitor_type)
+
+    async def range_series(
+        self,
+        series_kind: str,
+        monitor_id: str,
+        start_score: float,
+        end_score: float,
+        limit: int | None = None,
+        monitor_type: str | None = None,
+    ) -> list[dict[str, Any]]:
+        await self.ensure_available()
+        return await self.backend.range_series(series_kind, str(monitor_id), start_score, end_score, limit=limit, monitor_type=monitor_type)
+
+    async def tail_series(
+        self,
+        series_kind: str,
+        monitor_id: str,
+        count: int,
+        monitor_type: str | None = None,
+    ) -> list[dict[str, Any]]:
+        await self.ensure_available()
+        return await self.backend.tail_series(series_kind, str(monitor_id), count, monitor_type=monitor_type)
+
+    async def delete_series_group(
+        self,
+        series_kind: str,
+        monitor_id: str,
+        monitor_type: str | None = None,
+    ) -> None:
+        await self.ensure_available()
+        await self.backend.delete_series_group(series_kind, str(monitor_id), monitor_type=monitor_type)
+
+    async def delete_series_range(
+        self,
+        series_kind: str,
+        monitor_id: str,
+        max_score: float,
+        monitor_type: str | None = None,
+    ) -> int:
+        await self.ensure_available()
+        return await self.backend.delete_series_range(series_kind, str(monitor_id), max_score, monitor_type=monitor_type)
+
+    async def update_series_item(
+        self,
+        series_kind: str,
+        monitor_id: str,
+        item: dict[str, Any],
+        score: float,
+        monitor_type: str | None = None,
+    ) -> None:
+        await self.ensure_available()
+        await self.backend.update_series_item(series_kind, str(monitor_id), item, score, monitor_type=monitor_type)
+
+    # ── Leader lock ───────────────────────────────────────────────────
 
     async def try_acquire_leader_lock(self, lock_name: str, owner: str, ttl_seconds: int) -> bool:
         # In-memory backend: allow single process to proceed.

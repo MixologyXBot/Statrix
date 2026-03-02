@@ -12,6 +12,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from ..config import settings
 from ..database import GRACE_PERIOD_MINUTES, db
+from ..status_summary import status_summary_service
 from ..utils.cache import invalidate_status_cache
 from ..utils.email import send_down_alert, send_up_alert
 from ..utils.time import utcnow
@@ -38,21 +39,6 @@ def _monitor_target(monitor: dict, monitor_type: str) -> str:
     if monitor_type == "server":
         return monitor.get("hostname") or monitor.get("sid") or ""
     return monitor.get("sid") or ""
-
-
-_TYPE_LABELS = {
-    "uptime": "Website",
-    "website": "Website",
-    "heartbeat": "Heartbeat",
-    "heartbeat-cronjob": "Heartbeat (Cronjob)",
-    "heartbeat-server-agent": "Server Agent",
-    "server": "Server Agent",
-}
-
-
-def _type_label(monitor_type: str) -> str:
-    return _TYPE_LABELS.get(monitor_type, monitor_type.replace("_", " ").title())
-
 
 
 async def _probe_uptime_target(monitor: dict) -> bool:
@@ -102,7 +88,6 @@ async def _probe_all_uptime_monitors(monitors: list) -> dict[str, bool]:
         tasks.append(_probe_uptime_target(m))
     results = await asyncio.gather(*tasks, return_exceptions=True)
     return {keys[i]: (results[i] is True) for i in range(len(keys))}
-
 
 
 async def _run_monitor_sweep() -> None:
@@ -205,8 +190,6 @@ async def _run_monitor_sweep() -> None:
                     )
                     minute_records.append((monitor_id, now_minute, "up"))
                     continue
-                else:
-                    pass
 
             live = await db.get_cached_monitor_state(cache_kind, monitor_id)
             last_checkin_at = live.get("last_checkin_at") if live else monitor.get("last_checkin_at")
@@ -305,15 +288,35 @@ async def _run_monitor_sweep() -> None:
 async def _rebuild_cache_if_unhealthy() -> None:
     if not db.cache_service:
         return
+    if db.cache_warming_up:
+        return
     if db.cache_service.healthy:
         return
     try:
+        if await db.cache_service.backend.ping():
+            await db.cache_service.mark_healthy()
+            logger.info("Cache recovered via ping; skipping rebuild")
+            return
+    except Exception:
+        logger.debug("Cache pre-rebuild ping check failed", exc_info=True)
+    try:
         logger.warning("Cache unhealthy; attempting rebuild from DB snapshot")
         await db.resync_cache_from_db()
+        if settings.STATUS_SUMMARY_ENABLED:
+            await status_summary_service.rebuild_from_redis(db)
         await db.cache_service.mark_healthy()
         logger.info("Cache rebuild succeeded")
     except Exception:
         logger.exception("Cache rebuild attempt failed")
+
+
+async def _run_data_compression() -> None:
+    try:
+        logger.info("Starting daily data compression")
+        results = await db.compress_old_data()
+        logger.info("Data compression finished: %s", results)
+    except Exception:
+        logger.exception("Data compression failed")
 
 
 def start_monitor_loop() -> None:
@@ -335,6 +338,15 @@ def start_monitor_loop() -> None:
         "interval",
         seconds=max(5, int(settings.CACHE_REBUILD_INTERVAL_SECONDS or 30)),
         id="cache_rebuild",
+        max_instances=1,
+        coalesce=True,
+    )
+    _scheduler.add_job(
+        _run_data_compression,
+        "cron",
+        hour=settings.DATA_COMPRESSION_HOUR_UTC,
+        minute=0,
+        id="data_compression",
         max_instances=1,
         coalesce=True,
     )

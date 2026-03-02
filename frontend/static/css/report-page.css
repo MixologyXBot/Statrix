@@ -1,4 +1,5 @@
-/* ==================== REPORT PAGE STYLES ==================== */
+/* This file is a part of Statrix */
+/* Coding : Priyanshu Dey [@HellFireDevil18] */
 
 .hidden {
     display: none;
@@ -53,7 +54,6 @@
     color: #44b6ae;
 }
 
-/* Title Header */
 .title-header {
     background: linear-gradient(135deg, rgba(30, 42, 56, 0.9) 0%, rgba(26, 35, 48, 0.95) 100%);
     -webkit-backdrop-filter: blur(12px);
@@ -146,7 +146,6 @@
     transform: translateY(-1px);
 }
 
-/* Status Cards */
 .status-cards {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -416,7 +415,6 @@
         min-height: 32px;
     }
 
-    /* Keep status cards 2x2 on mobile */
     .status-cards {
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 6px;
@@ -604,7 +602,6 @@
         font-size: 12px;
     }
 
-    /* KEEP status cards 2x2 - never go to 1 column */
     .status-cards {
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 5px;
@@ -776,7 +773,6 @@
     }
 }
 
-/* Main Content Box */
 .content-box {
     background: rgba(30, 42, 56, 0.7);
     -webkit-backdrop-filter: blur(12px);
@@ -822,7 +818,6 @@
     color: #44b6ae;
 }
 
-/* Time Zone Notice */
 .timezone-notice {
     background: linear-gradient(135deg, rgba(37, 53, 69, 0.8) 0%, rgba(30, 42, 56, 0.9) 100%);
     -webkit-backdrop-filter: blur(8px);
@@ -847,7 +842,6 @@
     color: #fff;
 }
 
-/* Monitor Details Table */
 .details-container {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -893,7 +887,6 @@
     font-size: 12px;
 }
 
-/* Recent Uptime Grid */
 .recent-uptime {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
@@ -966,7 +959,6 @@
     font-size: 12px;
 }
 
-/* Graph Section */
 .graph-section {
     margin-top: 10px;
 }
@@ -1087,7 +1079,6 @@
     border-top: 1px solid #2d3a4a;
 }
 
-/* 4-item stats (Network) → 2x2 grid on all sizes */
 .graph-stats:has(> :nth-child(4)) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -1131,7 +1122,6 @@
     margin-top: 2px;
 }
 
-/* Footer */
 .footer {
     text-align: center;
     padding: 30px 20px;
@@ -1148,7 +1138,6 @@
     text-decoration: underline;
 }
 
-/* Loading */
 .loading {
     display: flex;
     align-items: center;
@@ -1167,7 +1156,6 @@
     to { transform: rotate(360deg); }
 }
 
-/* Full-page loading overlay */
 .loading-overlay {
     position: fixed;
     top: 0;
@@ -1198,12 +1186,10 @@
     color: #c5d0de;
 }
 
-/* Main content wrapper - initially hidden */
 .main-content {
     display: none;
 }
 
-/* Disable backdrop-filter on mobile to prevent glassy overlay */
 @media (max-width: 768px) {
     .title-header,
     .history-dropdown select,
@@ -1218,7 +1204,6 @@
     }
 }
 
-/* Desktop scale-up: keep mobile unchanged */
 @media (min-width: 1200px) {
     body {
         font-size: 14.5px;

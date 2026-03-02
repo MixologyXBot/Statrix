@@ -1,4 +1,5 @@
-/* ==================== LOGIN PAGE STYLES ==================== */
+/* This file is a part of Statrix */
+/* Coding : Priyanshu Dey [@HellFireDevil18] */
 
 .hidden {
     display: none;
@@ -26,7 +27,6 @@
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Desktop-only backdrop filter */
 @media (min-width: 769px) {
     .login-container {
         -webkit-backdrop-filter: blur(20px);
@@ -209,7 +209,6 @@
     color: #fff;
 }
 
-/* Responsive */
 @media (max-width: 480px) {
     .login-page {
         padding: 16px;
@@ -229,7 +228,6 @@
     }
 }
 
-/* Disable backdrop-filter on mobile to prevent glassy overlay during scroll */
 @media (max-width: 768px) {
     .login-container {
         -webkit-backdrop-filter: none !important;

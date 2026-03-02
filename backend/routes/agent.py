@@ -161,7 +161,7 @@ async def _process_server_payload(data: dict, source: str = "v2"):
         target=server.get("hostname") or sid,
     )
 
-    logger.info(
+    logger.debug(
         "Received agent data for server: %s (SID: %s, source=%s)",
         server["name"], _mask_sid(sid), source,
     )

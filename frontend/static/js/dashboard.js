@@ -322,7 +322,6 @@ function getStableLastCheckTimestamp(key, nextTimestampMs) {
             state.lastCheckTimestamps.set(key, nextTimestampMs);
             return nextTimestampMs;
         }
-        // Prevent visible backwards jumps from stale refreshes
         return prev;
     }
     if (Number.isFinite(prev) && prev > 0) {
@@ -404,7 +403,6 @@ function setupUserDropdown() {
         });
     }
 
-    // Close dropdown when clicking outside
     document.addEventListener('click', (e) => {
         if (dropdown && !dropdown.contains(e.target)) {
             dropdown.classList.remove('open');
@@ -485,7 +483,6 @@ async function readApiError(response, fallback) {
             }
         }
     } catch (_) {
-        // ignore
     }
     return fallback;
 }
@@ -500,7 +497,6 @@ async function loadUserData() {
 
     let user = cachedUser && typeof cachedUser === 'object' ? cachedUser : null;
 
-    // Always prefer live identity from backend to avoid stale/local fallback identities.
     try {
         const response = await apiRequest('/api/auth/me');
         if (response.ok) {
@@ -511,7 +507,6 @@ async function loadUserData() {
             }
         }
     } catch (_) {
-        // Network/auth errors are handled by apiRequest; keep cached user if available.
     }
 
     if (!user || !user.email) {
@@ -528,7 +523,6 @@ function updateUserUI() {
     const initialDisplay = document.getElementById('user-initial');
     const profileDisplay = document.getElementById('user-profile');
 
-    // Account overview panel elements
     const accountName = document.getElementById('account-name');
     const accountUsername = document.getElementById('account-username');
     const accountEmail = document.getElementById('account-email');
@@ -576,9 +570,6 @@ function updateUserUI() {
     }
 }
 
-/**
- * Load all data (resilient: one failing API does not break the whole dashboard)
- */
 async function loadAllData() {
     const requestSeq = ++loadAllDataRequestSeq;
     try {
@@ -645,7 +636,6 @@ async function loadAllData() {
             console.warn('Failed to refresh incidents; keeping previous data:', results[3].reason);
         }
 
-        // Fetch from same status API as public status page (single source of truth)
         try {
             const tzOffsetMinutes = -new Date().getTimezoneOffset();
             const statusRes = await fetch(`/api/public/status?tz_offset_minutes=${encodeURIComponent(String(tzOffsetMinutes))}&_=${Date.now()}`, {
@@ -903,7 +893,6 @@ function setupNavigation() {
         });
     });
 
-    // Breadcrumb navigation
     document.querySelectorAll('.ht-breadcrumb a[data-tab]').forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
@@ -911,7 +900,6 @@ function setupNavigation() {
         });
     });
 
-    // Top bar logo link
     const topBarLogo = document.querySelector('.top-bar-logo[data-tab]');
     if (topBarLogo) {
         topBarLogo.addEventListener('click', (e) => {
@@ -920,7 +908,6 @@ function setupNavigation() {
         });
     }
 
-    // Stat cards in overview - manual click handlers (not auto-triggered)
     document.querySelectorAll('.stat-card').forEach(card => {
         card.addEventListener('click', (e) => {
             e.preventDefault();
@@ -1140,7 +1127,6 @@ function toggleFilterMenu(type) {
 
     const isVisible = menu.classList.contains('show');
 
-    // Close all OTHER menus (not the target menu)
     document.querySelectorAll('.dropdown-menu').forEach(m => {
         if (m !== menu) {
             m.classList.remove('show');
@@ -1157,7 +1143,6 @@ function toggleFilterMenu(type) {
         setTimeout(() => { menu.classList.add('show'); }, 10);
     }
 
-    // Prevent clicks inside menu from closing it
     menu.onclick = (e) => {
         e.stopPropagation();
     };
@@ -1169,7 +1154,6 @@ function toggleSortMenu(type) {
 
     const isVisible = menu.classList.contains('show');
 
-    // Close all OTHER menus (not the target menu)
     document.querySelectorAll('.dropdown-menu').forEach(m => {
         if (m !== menu) {
             m.classList.remove('show');
@@ -1186,7 +1170,6 @@ function toggleSortMenu(type) {
         setTimeout(() => { menu.classList.add('show'); }, 10);
     }
 
-    // Prevent clicks inside menu from closing it
     menu.onclick = (e) => {
         e.stopPropagation();
     };
@@ -1245,7 +1228,6 @@ function setupLogout() {
 function updateStats() {
     const total = state.monitors.uptime.length + state.monitors.server.length + state.monitors.heartbeat.length;
 
-    // Calculate stats per type
     const websiteTotal = state.monitors.uptime.length;
     const websiteDown = state.monitors.uptime.filter(m => (m.status === 'down') || !m.enabled).length;
 
@@ -1260,7 +1242,6 @@ function updateStats() {
     const incidentsOpen = state.incidents.filter(i => i.status === 'open').length;
     const incidentsTotal = state.incidents.length;
 
-    // Use accurate overall uptime from status API if available, otherwise fallback to simple logic
     let uptimePercent;
     let upCount = 0;
     let downCount = 0;
@@ -1269,7 +1250,6 @@ function updateStats() {
         upCount = Math.round((state.overallUptime / 100) * total);
         downCount = total - upCount;
     } else {
-        // Fallback: Simple logic for demo: "Up" if enabled/reported recently
         upCount =
             state.monitors.uptime.filter(m => m.enabled).length +
             state.monitors.server.filter(m => m.last_report_at).length +
@@ -1324,7 +1304,6 @@ function updateStats() {
     const uptimePercentageEl = document.getElementById('uptime-percentage');
 
     if (totalChecksEl) {
-        // Estimate checks: assuming 60 second interval
         const checksPerDay = total * (24 * 60);
         const totalChecks = checksPerDay * 60; // 60 days
         totalChecksEl.textContent = formatNumber(totalChecks);
@@ -1824,7 +1803,6 @@ function renderMonitorTable(monitors, containerId, isOverview = false, type = nu
         return;
     }
 
-    // Use pagination if not overview
     let displayData = monitors;
     if (!isOverview && type) {
         const paginated = getPaginatedData(monitors, type);
@@ -1850,11 +1828,9 @@ function renderMonitorTable(monitors, containerId, isOverview = false, type = nu
             <tbody>
     `;
     displayData.forEach(m => {
-        // Determine status, badge, and source type
         let statusClass = 'unknown';
         let subText = '';
         let badge = '';
-        // Use actual uptime from status API (same as public status page) - never fake 100%
         const uptimeValue = m.uptime_percentage !== null && m.uptime_percentage !== undefined
             ? (typeof m.uptime_percentage === 'number' ? m.uptime_percentage.toFixed(4) + '%' : `${m.uptime_percentage}%`)
             : 'N/A';
@@ -1866,12 +1842,10 @@ function renderMonitorTable(monitors, containerId, isOverview = false, type = nu
             statusClass = m.maintenance_mode === true ? 'maintenance' : (m.status || (m.enabled ? 'up' : 'unknown'));
             subText = m.target || '';
             badge = getCompactSourceTypeLabel(sourceType);
-            // Keep uptimeHtml from status API; do not overwrite with 100%
         } else if (sourceType === MONITOR_SOURCE.HEARTBEAT_SERVER_AGENT) {
             statusClass = m.maintenance_mode === true ? 'maintenance' : (m.status || (m.last_report_at ? 'up' : 'unknown'));
             subText = '';
             badge = getCompactSourceTypeLabel(sourceType);
-            // Keep uptime from status API; do not overwrite with 100%
             metricsHtml = isOverview ? '' : getServerUsageBarsHtml(m);
         } else if (sourceType === MONITOR_SOURCE.HEARTBEAT_CRONJOB) {
             statusClass = m.maintenance_mode === true ? 'maintenance' : (m.status || (m.last_ping_at ? 'up' : 'unknown'));
@@ -1894,8 +1868,6 @@ function renderMonitorTable(monitors, containerId, isOverview = false, type = nu
             ? '#44b6ae'
             : (statusClass === 'down' ? '#e74c3c' : '#6b7785');
 
-        // 7-day bar: use real history from status API; only show for monitors with data; gray for unknown/down
-        // 7-day bar: use real history from status API ('up'|'partial'|'down'|'unknown'|'not_created')
         const hasHistory = m.history && Array.isArray(m.history) && m.history.length > 0;
         const isActiveOrUp = statusClass === 'up';
         let uptimeBarHtml = '';
@@ -1922,9 +1894,7 @@ function renderMonitorTable(monitors, containerId, isOverview = false, type = nu
             }
             uptimeBarHtml += '</div>';
         }
-        // Down/unknown with no history: no bar
 
-        // Format added date
         const addedDate = m.created_at ? new Date(m.created_at).toLocaleDateString() : '--';
 
         const lastCheckText = formatCheckAge(lastCheckTimestampMs);
@@ -1933,7 +1903,6 @@ function renderMonitorTable(monitors, containerId, isOverview = false, type = nu
         const canOpenDetails = true;
         const isPaused = !m.enabled;
 
-        // Actions - 3 Button Layout (Eye, Pencil, Gear)
         let actions = '';
         if (showActions) {
             actions = `
@@ -1949,7 +1918,6 @@ function renderMonitorTable(monitors, containerId, isOverview = false, type = nu
             `;
         }
 
-        // Status for dropdown button
         const statusBadgeClass = statusClass === 'up' ? 'status-up' : (statusClass === 'down' ? 'status-down' : 'status-unknown');
         let statusText = 'Unknown';
         if (statusClass === 'up') statusText = 'Active';
@@ -1990,7 +1958,6 @@ function renderMonitorTable(monitors, containerId, isOverview = false, type = nu
         const uptimeMarkup = (canOpenDetails && uptimeValue !== 'N/A')
             ? `<a href="#" class="monitor-name-link uptime-percent" onclick="return openDashboardMonitorDetails(event, '${sourceType}', '${monitorId}')">${uptimeHtml}</a>`
             : uptimeHtml;
-
 
         html += `
             <tr class="data-row" data-id="${m.id}">
@@ -2046,12 +2013,6 @@ function renderMonitorTable(monitors, containerId, isOverview = false, type = nu
     updateUpDownCells();
 }
 
-function getBgClass(val) {
-    if (val < 60) return 'bg-success';
-    if (val < 90) return 'bg-warning';
-    return 'bg-danger';
-}
-
 function formatBytesFromKb(kb) {
     if (!kb || isNaN(kb)) return '--';
     const bytes = Number(kb) * 1024;
@@ -2087,7 +2048,6 @@ function destroyServerChart() {
         try {
             state.charts[key].destroy();
         } catch (e) {
-            // Ignore Chart.js destroy errors on detached canvases.
         }
         state.charts[key] = null;
     });
@@ -2144,7 +2104,6 @@ function decodeMaybeBase64(value) {
         if (decoded && /[,;]/.test(decoded)) return decoded;
         if (decoded && /^[\x09\x0A\x0D\x20-\x7E]+$/.test(decoded)) return decoded;
     } catch (e) {
-        // Not base64; fall back to raw payload.
     }
     return raw;
 }
@@ -2653,7 +2612,6 @@ async function loadServerMetricsPanel(serverId, hours = 24) {
             applyHistory(cached.history, true);
             return;
         } catch (e) {
-            // If cached payload is invalid, fall back to network.
             state.serverHistoryCache.delete(cacheKey);
         }
     }
@@ -2958,87 +2916,12 @@ function showToast(message, type = 'info', duration = 3000) {
 
     document.body.appendChild(toast);
 
-    // Animate in
     setTimeout(() => toast.classList.add('toast-show'), 10);
 
-    // Auto remove after duration
     setTimeout(() => {
         toast.classList.remove('toast-show');
         setTimeout(() => toast.remove(), 300);
     }, duration);
-}
-
-function confirmDialog(options) {
-    return new Promise((resolve) => {
-        const {
-            title = 'Confirm Action',
-            message = 'Are you sure you want to proceed?',
-            confirmText = 'Confirm',
-            cancelText = 'Cancel',
-            type = 'warning'
-        } = options;
-
-        const overlay = document.createElement('div');
-        overlay.className = 'modal-overlay active';
-        overlay.style.zIndex = '2000';
-
-        const modal = document.createElement('div');
-        modal.className = 'modal modal-sm';
-        modal.style.maxWidth = '450px';
-        modal.style.transform = 'scale(1)';
-
-        let icon = 'exclamation-triangle';
-        let iconColor = 'var(--status-warn)';
-
-        if (type === 'danger') {
-            icon = 'exclamation-circle';
-            iconColor = 'var(--status-down)';
-        } else if (type === 'info') {
-            icon = 'info-circle';
-            iconColor = 'var(--primary)';
-        }
-
-        modal.innerHTML = `
-            <div class="modal-header">
-                <h3 class="modal-title">${title}</h3>
-            </div>
-            <div class="modal-body" style="text-align: center; padding: 2rem 1.5rem;">
-                <div class="confirm-dialog-icon" style="color: ${iconColor}; font-size: 3rem; margin-bottom: 1rem;">
-                    <i class="fas fa-${icon}"></i>
-                </div>
-                <p class="confirm-dialog-message">${message}</p>
-            </div>
-            <div class="modal-footer" style="justify-content: center; gap: 1rem;">
-                <button class="btn btn-secondary" id="confirm-cancel">${cancelText}</button>
-                <button class="btn btn-${type === 'danger' ? 'danger' : 'primary'}" id="confirm-confirm">${confirmText}</button>
-            </div>
-        `;
-
-        overlay.appendChild(modal);
-        document.body.appendChild(overlay);
-
-        const handleResult = (result) => {
-            overlay.remove();
-            resolve(result);
-        };
-
-        document.getElementById('confirm-cancel').addEventListener('click', () => handleResult(false));
-        document.getElementById('confirm-confirm').addEventListener('click', () => handleResult(true));
-
-        // Close on backdrop click
-        overlay.addEventListener('click', (e) => {
-            if (e.target === overlay) handleResult(false);
-        });
-
-        // Close on Escape key
-        const handleEscape = (e) => {
-            if (e.key === 'Escape') {
-                document.removeEventListener('keydown', handleEscape);
-                handleResult(false);
-            }
-        };
-        document.addEventListener('keydown', handleEscape);
-    });
 }
 
 async function showMonitorDetails(id) {
@@ -3223,9 +3106,6 @@ async function openMonitorTools(sourceType, id) {
     await showMonitorDetails(id);
 }
 
-/**
- * Show Add Monitor Modal. Pass editId to open in edit mode.
- */
 function showAddMonitorModalFromCurrentFilter() {
     const activeType = document.querySelector('.monitor-type-tab.active')?.dataset.type || 'website';
     const allowedTypes = new Set(['website', 'heartbeat-cronjob', 'heartbeat-server-agent']);
@@ -3356,9 +3236,6 @@ function prefillEditMonitorForm(monitor, type) {
     }
 }
 
-/**
- * Called when Monitor Type dropdown changes. Re-renders dynamic fields.
- */
 function onMonitorTypeChange() {
     const type = document.getElementById('monitor-type-select').value;
     const dynamicContainer = document.getElementById('monitor-dynamic-fields');
@@ -3376,9 +3253,6 @@ function onMonitorTypeChange() {
     if (icon) { icon.className = 'fas fa-chevron-down'; }
 }
 
-/**
- * Shared input styles for the dark modal
- */
 const _inputStyle = 'width:100%; padding:9px 12px; background:#1a1f26; border:1px solid #3a424d; border-radius:4px; color:#fff; font-size:0.9rem;';
 const _labelStyle = 'display:block; margin-bottom:6px; font-size:0.85rem; color:#c0c6ce; font-weight:500;';
 const _hintStyle = 'font-size:0.78rem; color:#6b7785; margin-top:4px; margin-bottom:0;';
@@ -3387,7 +3261,6 @@ const _groupStyle = 'margin-bottom:16px;';
 function getDynamicFieldsHTML(type) {
     let html = '';
 
-    // Monitor Name (all types)
     html += `
         <div class="form-group" style="${_groupStyle}">
             <label style="${_labelStyle}">Monitor Name *</label>
@@ -3396,7 +3269,6 @@ function getDynamicFieldsHTML(type) {
         </div>
     `;
 
-    // Website type fields
     if (type === 'website') {
         html += `
             <div class="form-group" style="${_groupStyle}">
@@ -3408,7 +3280,6 @@ function getDynamicFieldsHTML(type) {
         `;
     }
 
-    // Heartbeat type fields
     if (type === 'heartbeat') {
         html += `
             <div class="form-group" style="${_groupStyle}">
@@ -3422,7 +3293,6 @@ function getDynamicFieldsHTML(type) {
         `;
     }
 
-    // Category (all types)
     html += `
         <div class="form-group" style="${_groupStyle}">
             <label style="${_labelStyle}">(Optional) Category</label>
@@ -3430,7 +3300,6 @@ function getDynamicFieldsHTML(type) {
             <p style="${_hintStyle}">Assign a Category for this monitor so it will be automatically grouped in your Status Pages.</p>
         </div>
     `;
-
 
     return html;
 }
@@ -3474,10 +3343,6 @@ function toggleAdvancedSettings() {
     }
 }
 
-
-/**
- * Submit Add Monitor. Uses PATCH when state.editMonitorId is set.
- */
 async function submitAddMonitor() {
     const type = document.getElementById('monitor-type-select').value;
     const name = document.getElementById('mon-name')?.value?.trim();
@@ -3691,7 +3556,6 @@ async function copyTextToClipboard(text, successMessage = 'Copied to clipboard')
             return;
         }
     } catch (_) {
-        // Fall back to execCommand path below
     }
 
     const temp = document.createElement('textarea');
@@ -3931,13 +3795,6 @@ async function showServerAgentCommandCenter(id, mode = 'install', platform = 'li
     }
 }
 
-/**
- * Action: Show Server Install Command (legacy alias)
- */
-async function showServerInstallCommand(id, platform = 'linux') {
-    await showServerAgentCommandCenter(id, 'install', platform);
-}
-
 async function resolveIncident(id) {
     try {
         const res = await apiRequest(`/api/incidents/${id}/resolve`, { method: 'POST' });
@@ -3976,7 +3833,6 @@ function loadReportsTab() {
 function loadReportData() {
     const period = getReportPeriodDays();
 
-    // Calculate summary stats
     updateReportVisibility();
     updateReportSummary(period);
 
@@ -4021,10 +3877,8 @@ function updateReportSummary(period) {
         reportUptimeEl.textContent = uptimePercent !== null ? `${uptimePercent.toFixed(4)}%` : '--';
     }
 
-    // Incidents count
     if (reportIncidentsEl) reportIncidentsEl.textContent = state.incidents.length;
 
-    // Average response time (from uptime monitors)
     const monitorsWithResponse = state.monitors.uptime.filter(m => m.response_time_avg != null);
     if (monitorsWithResponse.length > 0) {
         const avgResponse = monitorsWithResponse.reduce((sum, m) => sum + (m.response_time_avg || 0), 0) / monitorsWithResponse.length;
@@ -4056,13 +3910,11 @@ async function updateUptimeChart(period) {
     let chartSeries = null;
 
     if (chartType === 'daily') {
-        // Daily view should stay a true short-range daily chart.
         const dailyLocal = buildDailyUptimeSeries();
         chartSeries = trimSeriesToPeriod(dailyLocal, Math.min(7, selectedPeriodDays));
     } else {
         let dailySeries = await buildPeriodDailyUptimeSeries(selectedPeriodDays);
         if (!dailySeries) {
-            // Fallback to already-loaded monitor history if period data fetch fails.
             dailySeries = buildDailyUptimeSeries();
         }
         if (dailySeries) {
@@ -4088,12 +3940,10 @@ async function updateUptimeChart(period) {
     const data = chartSeries.data;
     setChartEmptyState('uptime-chart', null);
 
-    // Destroy existing chart
     if (state.charts.uptime) {
         state.charts.uptime.destroy();
     }
 
-    // Create chart
     state.charts.uptime = new Chart(ctx, {
         type: 'line',
         data: {
@@ -4168,12 +4018,10 @@ function updateResponseChart(period) {
     const data = responseMonitors.map(m => Math.round(m.response_time_avg));
     setChartEmptyState('response-chart', null);
 
-    // Destroy existing chart
     if (state.charts.response) {
         state.charts.response.destroy();
     }
 
-    // Create chart
     state.charts.response = new Chart(ctx, {
         type: 'bar',
         data: {
@@ -4369,7 +4217,6 @@ function computeChecksForMonitor(monitor, periodDays) {
     const sourceType = getSourceTypeFromMonitor(monitor);
     if (sourceType !== MONITOR_SOURCE.WEBSITE) return null;
 
-    // Uptime checks run on a fixed 1-minute cadence.
     const interval = 1;
 
     if (monitor.enabled === false) return 0;
@@ -4634,20 +4481,6 @@ function aggregateDailySeriesToMonthly(series) {
     };
 }
 
-function downloadFile(content, filename, mimeType) {
-    const blob = new Blob([content], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-}
-
-// Bulk selection system removed
-
 function changePage(type, page) {
     state.pagination[type].page = page;
     refreshCurrentView();
@@ -4699,7 +4532,6 @@ function renderPagination(type, containerId) {
                 </button>
     `;
 
-    // Page numbers
     const maxVisiblePages = 5;
     let startPage = Math.max(1, page - Math.floor(maxVisiblePages / 2));
     let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
@@ -4860,11 +4692,7 @@ function toggleStatusDropdown(event, buttonEl) {
     }
 }
 
-/**
- * Close dropdowns when clicking outside
- */
 document.addEventListener('click', (e) => {
-    // Don't close if click was inside a status dropdown, dropdown-toggle, or dropdown-menu
     if (e.target.closest('.status-dropdown') ||
         e.target.closest('.dropdown-toggle') || e.target.closest('.dropdown-menu')) return;
     closeAllDropdowns();

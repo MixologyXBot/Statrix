@@ -22,11 +22,6 @@ function setUser(user) {
     localStorage.setItem(USER_KEY, JSON.stringify(user));
 }
 
-function getUser() {
-    const userStr = localStorage.getItem(USER_KEY);
-    return userStr ? JSON.parse(userStr) : null;
-}
-
 function isAuthenticated() {
     return !!getToken();
 }

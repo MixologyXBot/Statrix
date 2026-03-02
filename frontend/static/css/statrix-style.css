@@ -1,16 +1,10 @@
-/* ==================== STRATRIX UI STYLES ==================== */
+/* This file is a part of Statrix */
+/* Coding : Priyanshu Dey [@HellFireDevil18] */
 
-/* ==================== VARIABLES (unified with style.css :root) ==================== */
-/* All variables now defined in style.css :root — no duplicate :root block needed */
-
-/* ==================== UTILITY ==================== */
 .hidden {
     display: none;
 }
 
-/* ==================== PHASE 3: TABLE STYLING ==================== */
-
-/* Action Buttons */
 .btn-action-icon {
     display: inline-flex;
     align-items: center;
@@ -42,7 +36,6 @@
     pointer-events: none;
 }
 
-/* Table Row Styling */
 .data-table .data-row {
     transition: var(--transition-fast);
     border-bottom: 1px solid var(--border-light);
@@ -56,7 +49,6 @@
     background: rgba(68, 182, 174, 0.1) !important;
 }
 
-/* Checkbox Styling */
 .monitor-checkbox {
     width: 16px;
     height: 16px;
@@ -64,7 +56,6 @@
     accent-color: var(--primary);
 }
 
-/* Mini Uptime Bar (7-day) */
 .mini-uptime-bar {
     display: flex;
     gap: 2px;
@@ -91,7 +82,6 @@
     background: var(--text-muted);
 }
 
-/* Type Badges */
 .type-badge {
     display: inline-block;
     padding: 2px 8px;
@@ -110,7 +100,6 @@
     letter-spacing: 0;
 }
 
-/* Enhanced Type Badges with Colors */
 .type-badge.http,
 .type-badge.https {
     background: rgba(68, 182, 174, 0.15);
@@ -145,7 +134,6 @@
     border-color: rgba(236, 100, 89, 0.3);
 }
 
-/* Status Badges */
 .status-badge-inline {
     display: inline-block;
     padding: 4px 12px;
@@ -178,7 +166,6 @@
     border-color: rgba(136, 144, 151, 0.3);
 }
 
-/* Status Dropdown Button */
 .status-dropdown {
     position: relative;
 }
@@ -284,7 +271,6 @@
     margin: 6px 0;
 }
 
-/* Uptime Cell */
 .uptime-cell-content {
     display: flex;
     flex-direction: column;
@@ -303,7 +289,6 @@
     color: var(--primary);
 }
 
-/* Up/Down Duration Cell */
 .col-up-down {
     font-size: 0.85rem;
     color: var(--text-light);
@@ -322,7 +307,6 @@
     color: var(--primary);
 }
 
-/* Name Column */
 .monitor-name-info {
     display: flex;
     flex-direction: column;
@@ -346,7 +330,6 @@
     font-weight: 400;
 }
 
-/* Server Metrics */
 .server-metrics-inline {
     display: flex;
     gap: 4px;
@@ -356,7 +339,6 @@
     max-width: 200px;
 }
 
-/* Table Column Widths */
 .col-checkbox {
     width: 40px;
     text-align: center;
@@ -398,8 +380,6 @@
     width: 120px;
     text-align: right;
 }
-
-/* ==================== STATS CARDS ==================== */
 
 .stats-container {
     display: grid;
@@ -524,8 +504,6 @@
     font-weight: 600;
 }
 
-/* ==================== DASHBOARD PANELS ==================== */
-
 .dashboard-panel {
     background: var(--bg-card-solid);
     border: 1px solid var(--border-solid);
@@ -574,8 +552,6 @@
     color: #fff;
 }
 
-/* ==================== ACCOUNT OVERVIEW ==================== */
-
 .account-overview-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -601,8 +577,6 @@
     color: #fff;
     font-weight: 500;
 }
-
-/* ==================== QUICK ACTIONS ==================== */
 
 .quick-actions-grid {
     display: grid;
@@ -637,8 +611,6 @@
     font-size: 1.5rem;
     color: var(--primary);
 }
-
-/* ==================== PRODUCTS & NEWS LISTS ==================== */
 
 .products-list,
 .news-list {
@@ -700,8 +672,6 @@
 .news-item a:hover {
     color: #fff;
 }
-
-/* ==================== BUTTONS ==================== */
 
 .btn {
     display: inline-flex;
@@ -770,8 +740,6 @@
     border-color: var(--status-error);
 }
 
-/* ==================== FORM ELEMENTS ==================== */
-
 .form-group {
     margin-bottom: 1.25rem;
 }
@@ -830,8 +798,6 @@
     line-height: 1.4;
 }
 
-/* ==================== TABLES ==================== */
-
 .monitors-table-container {
     background: var(--bg-card-solid);
     border: 1px solid var(--border-solid);
@@ -880,7 +846,6 @@
     vertical-align: middle;
 }
 
-/* Status Indicators */
 .status-indicator {
     display: inline-flex;
     align-items: center;
@@ -912,8 +877,6 @@
 .status-indicator.status-down {
     color: var(--status-error);
 }
-
-/* ==================== DROPDOWNS ==================== */
 
 .dropdown {
     position: relative;
@@ -988,8 +951,6 @@
     background: var(--border-solid);
     margin: 0.5rem 0;
 }
-
-/* ==================== WIZARD MODAL ==================== */
 
 .modal-overlay {
     position: fixed;
@@ -1091,7 +1052,6 @@
     background: var(--bg-darker);
 }
 
-/* Wizard Steps */
 .wizard-steps {
     display: flex;
     align-items: center;
@@ -1169,7 +1129,6 @@
     display: block;
 }
 
-/* Monitor Type Grid */
 .monitor-type-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -1231,7 +1190,6 @@
     line-height: 1.4;
 }
 
-/* Monitor Locations */
 .monitor-locations {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -1261,8 +1219,6 @@
     cursor: pointer;
     accent-color: var(--primary);
 }
-
-/* ==================== PAGINATION ==================== */
 
 .statrix-pagination {
     display: flex;
@@ -1365,8 +1321,6 @@
     }
 }
 
-/* ==================== BULK ACTIONS BAR ==================== */
-
 .bulk-actions-bar {
     background: rgba(68, 182, 174, 0.1);
     border: 1px solid rgba(68, 182, 174, 0.3);
@@ -1381,8 +1335,6 @@
     gap: 0.5rem;
     flex-wrap: wrap;
 }
-
-/* ==================== SEARCH BOX ==================== */
 
 .search-box {
     display: flex;
@@ -1430,8 +1382,6 @@
     color: #fff;
 }
 
-/* ==================== TAB HEADER ENHANCED ==================== */
-
 .tab-header-enhanced {
     display: flex;
     align-items: center;
@@ -1473,8 +1423,6 @@
     position: relative;
 }
 
-/* ==================== TABLE TOOLBAR ==================== */
-
 .table-toolbar {
     display: flex;
     align-items: center;
@@ -1505,8 +1453,6 @@
     font-weight: 600;
 }
 
-/* ==================== CHECKBOX WRAPPER ==================== */
-
 .checkbox-wrapper {
     display: inline-flex;
     align-items: center;
@@ -1526,8 +1472,6 @@
     color: var(--text-light);
 }
 
-/* ==================== ADVANCED SETTINGS ==================== */
-
 .advanced-settings-section {
     padding: 1rem;
     background: var(--bg-dark);
@@ -1544,8 +1488,6 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
-
-/* ==================== RESPONSIVE DESIGN ==================== */
 
 @media (max-width: 768px) {
     .tab-header-enhanced {
@@ -1579,8 +1521,6 @@
     }
 }
 
-/* ==================== BREADCRUMB ==================== */
-
 .ht-breadcrumb {
     display: flex;
     align-items: center;
@@ -1609,8 +1549,6 @@
     color: var(--text-light);
     font-weight: 500;
 }
-
-/* ==================== TOOLBAR ==================== */
 
 .ht-toolbar {
     display: flex;
@@ -1710,8 +1648,6 @@
     color: #fff;
 }
 
-/* ==================== GROUP ACTIONS ==================== */
-
 .ht-group-actions-row {
     display: flex;
     align-items: center;
@@ -1755,8 +1691,6 @@
     background: var(--primary-hover);
 }
 
-/* ==================== UTILITY CLASSES ==================== */
-
 .text-muted {
     color: var(--text-muted);
 }
@@ -1784,8 +1718,6 @@
 .border-primary {
     border-color: var(--primary);
 }
-
-/* ==================== ANIMATIONS ==================== */
 
 @keyframes fadeIn {
     from {
@@ -1817,8 +1749,6 @@
     animation: slideIn 0.3s ease;
 }
 
-/* ==================== LOADING STATES ==================== */
-
 .loading-state {
     display: flex;
     align-items: center;
@@ -1840,8 +1770,6 @@
         transform: rotate(360deg);
     }
 }
-
-/* ==================== TOAST NOTIFICATIONS ==================== */
 
 .toast-container {
     position: fixed;
@@ -1910,8 +1838,6 @@
     color: #fff;
 }
 
-/* ==================== EMPTY STATES ==================== */
-
 .empty-state {
     text-align: center;
     padding: 3rem 1.5rem;
@@ -1945,8 +1871,6 @@
     margin-left: auto;
     margin-right: auto;
 }
-
-/* ==================== MONITOR TYPE TABS ==================== */
 
 .monitor-type-tabs {
     display: flex;
@@ -1987,8 +1911,6 @@
 .monitor-type-tab i {
     font-size: 0.875rem;
 }
-
-/* ==================== DROPDOWN STABILITY FIXES ==================== */
 
 .dashboard-body select,
 .dashboard-body select.form-control,
@@ -2034,37 +1956,29 @@
     white-space: normal;
 }
 
-/* ==================== INLINE STYLE REPLACEMENTS ==================== */
-
-/* Logo sizing for sidebar and top-bar */
 .sidebar-logo .logo-img,
 .top-bar-logo img {
     width: 28px;
     height: 28px;
 }
 
-/* User name uppercase */
 .user-name {
     text-transform: uppercase;
 }
 
-/* Dropdown caret icon */
 .dropdown-caret {
     font-size: 0.65rem;
     margin-left: 0.2rem;
 }
 
-/* Account uptime color */
 #account-uptime {
     color: var(--status-up);
 }
 
-/* Pagination page input */
 .pagination-input {
     width: 50px;
 }
 
-/* Report card icon variants */
 #report-uptime-card .report-card-icon {
     background: rgba(68, 182, 174, 0.15);
     color: var(--status-up);

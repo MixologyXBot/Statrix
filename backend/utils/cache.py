@@ -3,8 +3,6 @@
 
 import logging
 
-from ..database import db
-
 logger = logging.getLogger(__name__)
 
 
@@ -20,9 +18,3 @@ def invalidate_status_cache() -> None:
         logger.warning("Failed to import status_pages for cache invalidation: %s", exc)
     except Exception as exc:
         logger.error("Error invalidating status cache: %s", exc)
-    finally:
-        try:
-            if getattr(db, "cache_backend_name", "inmemory") == "redis":
-                db.schedule_cache_resync()
-        except Exception:
-            logger.debug("Failed scheduling cache resync", exc_info=True)

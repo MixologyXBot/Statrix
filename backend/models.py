@@ -283,7 +283,3 @@ class MaintenanceScheduleRequest(BaseModel):
         if start_at and v <= start_at:
             raise ValueError("end_at must be after start_at")
         return v
-
-
-class ErrorResponse(BaseModel):
-    detail: str

@@ -309,7 +309,21 @@ python -c "import secrets; print(secrets.token_urlsafe(32))"
 | `MONITOR_LEADER_LOCK_TTL_SECONDS` | ❌ | `90` | Redis leader lock TTL |
 | `CHECK_INTERVAL_SECONDS` | ❌ | `60` | Monitor check loop interval |
 | `NOTIFICATION_CHECK_INTERVAL_SECONDS` | ❌ | `30` | Notification check loop interval |
+| `LOG_LEVEL` | ❌ | `INFO` | Application log level |
+| `UVICORN_ACCESS_LOG` | ❌ | `false` | Enable uvicorn HTTP access logging |
+| `PG_POOL_MIN_SIZE` | ❌ | `2` | PostgreSQL connection pool minimum |
+| `PG_POOL_MAX_SIZE` | ❌ | `5` | PostgreSQL connection pool maximum |
+| `DATA_RETENTION_DAYS` | ❌ | `7` | Days of minute-level data to retain |
+| `DATA_COMPRESSION_HOUR_UTC` | ❌ | `2` | UTC hour for daily data compression |
 | `WEB_CONCURRENCY` | ❌ | `1` | Keep at `1` until leader-lock is validated |
+| `PUBLIC_STATUS_CACHE_TTL_SECONDS` | ❌ | `10` | Live status payload TTL for Redis/local fallback cache |
+| `STATUS_SUMMARY_ENABLED` | ❌ | `true` | Enable hybrid Redis + in-memory summary path for main public status |
+| `STATUS_SUMMARY_WARMUP_DELAY_SECONDS` | ❌ | `90` | Delayed startup warmup for in-memory summary build from PostgreSQL |
+| `STATUS_SUMMARY_COLD_WAIT_SECONDS` | ❌ | `5` | Max wait for first request while summary warmup runs |
+| `STATUS_SUMMARY_FLUSH_INTERVAL_SECONDS` | ❌ | `10` | Today-only summary flush cadence |
+| `STATUS_SUMMARY_MAX_TIMELINE_SEGMENTS` | ❌ | `32` | Max current-day transition segments retained per monitor |
+| `STATUS_SUMMARY_PARTIAL_DOWNTIME_MINUTES` | ❌ | `15.0` | Threshold between partial and full down day states |
+| `STATUS_SUMMARY_REDIS_PREFIX` | ❌ | `status:summary:v1` | Redis key prefix for persistent summary keys |
 
 
 ---

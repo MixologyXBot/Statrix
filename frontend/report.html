@@ -18,7 +18,7 @@
 </head>
 
 <body>
-    <!-- Loading Overlay -->
+
     <div id="loading-overlay" class="loading-overlay">
         <div class="loading-content">
             <i class="fas fa-spinner"></i>
@@ -26,19 +26,17 @@
         </div>
     </div>
 
-    <!-- Main Content (hidden until loaded) -->
     <div class="main-content" id="main-content">
     <div class="container">
-        <!-- Logo Header -->
+
         <div class="logo-header">
             <a href="/" target="_blank" rel="noopener noreferrer" title="Status Page">
                 <img src="{{STATUS_LOGO_URL}}" alt="Status Page Logo" id="status-logo">
             </a>
         </div>
 
-        <!-- Header: Back Arrow, Title, Dropdown, SLA - all on one line -->
         <div class="title-header">
-            <!-- Left side: Back arrow + Title (clickable) -->
+
             <div class="title-header-left">
                 <a href="javascript:window.history.back();" class="back-link" title="Back">
                     <i class="fas fa-chevron-left"></i>
@@ -47,7 +45,7 @@
                     <i class="fas fa-spinner fa-spin" id="title-spinner"></i>Loading... (Recent History)
                 </a>
             </div>
-            <!-- Right side: Calendar icon + Dropdown -->
+
             <div class="history-controls">
                 <label class="calendar-btn" for="history-select" title="Select History">
                     <i class="fas fa-calendar-alt"></i>
@@ -55,13 +53,12 @@
                 <div class="history-dropdown">
                     <select id="history-select" onchange="loadHistoryPeriod(this.value)" title="History period">
                         <option value="recent">Recent History</option>
-                        <!-- Monthly options populated dynamically -->
+
                     </select>
                 </div>
             </div>
         </div>
 
-        <!-- Status Cards -->
         <div class="status-cards">
             <div class="status-card" id="status-card">
                 <div class="icon">
@@ -101,7 +98,6 @@
             </div>
         </div>
 
-        <!-- Monitor Details -->
         <div class="content-box">
             <div class="section-header">
                 <h3><i class="fas fa-info-circle"></i> Monitor Details</h3>
@@ -152,17 +148,15 @@
             </div>
         </div>
 
-        <!-- Recent Uptime -->
         <div class="content-box">
             <div class="section-header">
                 <h3><i class="fas fa-history"></i> Recent Uptime</h3>
             </div>
             <div class="recent-uptime" id="recent-uptime">
-                <!-- Populated dynamically -->
+
             </div>
         </div>
 
-        <!-- CPU Usage Chart -->
         <div class="content-box hidden" id="cpu-section">
             <div class="graph-section">
                 <div class="graph-header">
@@ -213,7 +207,6 @@
             </div>
         </div>
 
-        <!-- RAM Usage Chart -->
         <div class="content-box hidden" id="ram-section">
             <div class="graph-section">
                 <div class="graph-header">
@@ -263,7 +256,6 @@
             </div>
         </div>
 
-        <!-- Network Usage Chart -->
         <div class="content-box hidden" id="network-section">
             <div class="graph-section">
                 <div class="graph-header">
@@ -319,7 +311,6 @@
             </div>
         </div>
 
-        <!-- Disk Usage Chart -->
         <div class="content-box hidden" id="disk-section">
             <div class="graph-section">
                 <div class="graph-header">
@@ -366,12 +357,11 @@
             </div>
         </div>
 
-        <!-- Footer -->
         <div class="footer">
             Powered by <a href="https://github.com/HellFireDevil18/Statrix" target="_blank" rel="noopener noreferrer">Statrix</a> - Uptime Monitor
         </div>
     </div>
-    </div> <!-- End main-content -->
+    </div>
 
     <script>
         async function loadConfig() {
@@ -388,11 +378,9 @@
                 }
             } catch (e) {
                 console.error('Failed to load config:', e);
-                // Fall back to default logo already in HTML
             }
         }
 
-        // URL params
         const urlParams = new URLSearchParams(window.location.search);
         const monitorId = urlParams.get('id');
         const rawTypeParam = (urlParams.get('type') || 'uptime').toLowerCase();
@@ -464,14 +452,12 @@
             return fetch(withCacheBust(endpoint), { ...options, cache: 'no-store' });
         }
 
-        // Chart instances
         let cpuChart, ramChart, networkChart, diskChart;
         let currentTimeRange = 168; // Default 7 days
         let activeGraphSpanHours = 168;
         let historyMode = 'recent'; // 'recent' | 'month'
         let selectedMonthRange = null; // { startISO, endISO, label }
 
-        // Monitor data
         let monitorData = null;
         let detailsRefreshInFlight = false;
 
@@ -551,7 +537,6 @@
                 monitorIconEl.className = 'fas fa-globe';
             }
 
-            // Update monitor type card (compact label, full label in tooltip)
             const compactTypeLabel = getMonitorTypeLabel(monitorType, monitorData?.heartbeat_type || rawHeartbeatType, true);
             const fullTypeLabel = getMonitorTypeLabel(monitorType, monitorData?.heartbeat_type || rawHeartbeatType, false);
             const monitorTypeEl = document.getElementById('monitor-type');
@@ -575,7 +560,6 @@
             updateRecentUptime(monitorData.history || []);
 
             if (showContent) {
-                // Show chart sections (they're already loaded via parallel tasks)
                 if (isServerAgentContext()) {
                     document.getElementById('cpu-section').classList.remove('hidden');
                     document.getElementById('ram-section').classList.remove('hidden');
@@ -583,7 +567,6 @@
                     document.getElementById('disk-section').classList.remove('hidden');
                 }
 
-                // Hide loading overlay and show content - ALL DATA IS NOW READY
                 document.getElementById('loading-overlay').style.display = 'none';
                 document.getElementById('main-content').style.display = 'block';
             }
@@ -753,11 +736,10 @@
 
         function updateTimezoneDisplay() {
             document.getElementById('timezone-display').textContent = 'UTC+00:00';
-            
-            // Calculate difference between UTC and user's local time
+
             const offsetMinutes = new Date().getTimezoneOffset(); // negative for east of UTC
             const userOffsetHours = -offsetMinutes / 60; // positive for east of UTC (e.g. IST = 5.5)
-            
+
             let diffText;
             if (userOffsetHours === 0) {
                 diffText = 'same as yours.';
@@ -765,21 +747,17 @@
                 const absDiff = Math.abs(userOffsetHours);
                 const hourStr = absDiff === 1 ? '1 hour' : `${absDiff} hours`;
                 if (userOffsetHours > 0) {
-                    // UTC is BEHIND the user (user is east of UTC)
                     diffText = `${hourStr} behind yours.`;
                 } else {
-                    // UTC is AHEAD of the user (user is west of UTC)
                     diffText = `${hourStr} ahead of yours.`;
                 }
             }
             document.getElementById('timezone-diff').textContent = diffText;
-            
+
             document.getElementById('current-year').textContent = new Date().getFullYear();
         }
 
         function setupCalendarButton() {
-            // Calendar button is now a <label for="history-select">
-            // which natively opens the select dropdown - no JS needed
         }
 
         function getChartByMetric(metric) {
@@ -831,7 +809,6 @@
 
         async function loadMonitorDetails() {
             try {
-                // Load monthly archives and chart data IN PARALLEL with monitor details
                 const parallelTasks = [
                     fetchMonitorDetails(),
                     loadMonthlyArchives()
@@ -863,13 +840,13 @@
             const ts = toTimestampMs(dateStr);
             if (!Number.isFinite(ts) || ts <= 0) return 'Since --';
             const diff = Math.max(0, Date.now() - ts);
-            
+
             const weeks = Math.floor(diff / (7 * 24 * 60 * 60 * 1000));
             const days = Math.floor((diff % (7 * 24 * 60 * 60 * 1000)) / (24 * 60 * 60 * 1000));
             const hours = Math.floor((diff % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
             const minutes = Math.floor((diff % (60 * 60 * 1000)) / (60 * 1000));
             const seconds = Math.floor((diff % (60 * 1000)) / 1000);
-            
+
             if (weeks > 0) {
                 return `Since ${weeks}w ${days}d ago`;
             }
@@ -936,7 +913,6 @@
 
             const pick = (key) => {
                 const v = stats[key];
-                // Return null if value is null/undefined, otherwise return the number
                 if (v === null || v === undefined) return null;
                 return (typeof v === 'number' && !Number.isNaN(v)) ? v : null;
             };
@@ -975,12 +951,12 @@
             const now = new Date();
             const todayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             const entries = Array.isArray(history) ? history : [];
-            
+
             let html = '';
             for (let i = 0; i < 7; i++) {
                 const date = new Date(todayLocal);
                 date.setDate(todayLocal.getDate() - (6 - i));
-                
+
                 const day = date.getDate();
                 const suffix = getDaySuffix(day);
                 const month = date.toLocaleString('en-US', { month: 'short' });
@@ -996,7 +972,7 @@
                 let statusClass = '';
                 let icon = 'arrow-up';
                 let tooltip = '';
-                
+
                 if (status === 'down') {
                     statusClass = 'down';
                     icon = 'arrow-down';
@@ -1034,7 +1010,7 @@
                 if (customTooltip) {
                     tooltip = customTooltip;
                 }
-                
+
                 html += `
                     <div class="uptime-day">
                         <div class="date">${day}${suffix} ${month}</div>
@@ -1044,7 +1020,7 @@
                     </div>
                 `;
             }
-            
+
             container.innerHTML = html;
         }
 
@@ -1059,12 +1035,10 @@
             return `${Math.max(1, mins)}m`;
         }
 
-        // Populate history dropdown (real monthly archives from API)
         async function loadMonthlyArchives() {
             const select = document.getElementById('history-select');
             if (!select) return;
 
-            // Remove any previously-added month options (keep "recent")
             Array.from(select.querySelectorAll('option')).forEach((opt) => {
                 if (opt.value !== 'recent') opt.remove();
             });
@@ -1075,7 +1049,6 @@
                 const data = await res.json();
                 const archives = Array.isArray(data.archives) ? data.archives : [];
 
-                // Newest-first
                 archives.sort((a, b) => (b.year - a.year) || (b.month_num - a.month_num));
 
                 for (const a of archives) {
@@ -1165,7 +1138,7 @@
             ['cpu', 'ram', 'network', 'disk'].forEach(metric => {
                 const container = document.getElementById(`${metric}-time-btns`);
                 if (!container) return;
-                
+
                 container.querySelectorAll('button[data-hours]').forEach(btn => {
                     btn.addEventListener('click', async () => {
                         if (historyMode !== 'recent') return;
@@ -1198,7 +1171,6 @@
             syncLegendOpacity('disk');
         }
 
-        // Load server history (recent) by hours
         async function loadServerHistoryHours(hours = 168) {
             try {
                 activeGraphSpanHours = hours;
@@ -1216,7 +1188,6 @@
             }
         }
 
-        // Load server history for an explicit time range (used by month selection)
         async function loadServerHistoryRange(startISO, endISO) {
             try {
                 const start = new Date(startISO);
@@ -1238,7 +1209,6 @@
             }
         }
 
-        // Chart configuration
         const chartConfig = {
             responsive: true,
             maintainAspectRatio: false,
@@ -1519,7 +1489,6 @@
         function normalizeTimestamp(ts) {
             if (!ts) return '';
             const s = String(ts);
-            // If already includes timezone (Z or +hh:mm), keep as-is; otherwise treat as UTC.
             const hasTz = /[zZ]$/.test(s) || /[+-]\d{2}:?\d{2}$/.test(s);
             return hasTz ? s : s + 'Z';
         }
@@ -1529,7 +1498,6 @@
             return s ? new Date(s) : null;
         }
 
-        // Format chart labels (use real timestamps; ticks will format for display)
         function formatChartDate(timestamp) {
             return normalizeTimestamp(timestamp);
         }
@@ -1580,7 +1548,6 @@
                 document.getElementById('ram-max').textContent = Math.max(...ramValues).toFixed(2) + '%';
             }
 
-            // Network stats (values expected in bytes/sec)
             if (netInBytesPerSec.length && netOutBytesPerSec.length) {
                 const curIn = netInBytesPerSec[netInBytesPerSec.length - 1];
                 const curOut = netOutBytesPerSec[netOutBytesPerSec.length - 1];
@@ -1591,7 +1558,6 @@
                 const maxIn = Math.max(...netInBytesPerSec);
                 const maxOut = Math.max(...netOutBytesPerSec);
 
-                // Integrate rates to approximate totals
                 let totalInBytes = 0;
                 let totalOutBytes = 0;
                 for (let i = 1; i < history.length; i++) {
@@ -1616,7 +1582,6 @@
                 document.getElementById('network-max-detail').textContent = `In: ${formatBitsPerSec(maxIn * 8)} | Out: ${formatBitsPerSec(maxOut * 8)}`;
             }
 
-            // Disk stats
             if (diskValues.length) {
                 document.getElementById('disk-current').textContent = diskValues[diskValues.length - 1].toFixed(2) + '%';
                 document.getElementById('disk-avg').textContent = (diskValues.reduce((a, b) => a + b, 0) / diskValues.length).toFixed(2) + '%';
@@ -1625,7 +1590,7 @@
         }
 
         init();
-        
+
         function refreshServerChartsForMode() {
             if (!isServerAgentContext()) return;
             if (historyMode === 'recent') {
@@ -1635,14 +1600,12 @@
             }
         }
 
-        // Auto-refresh every 60 seconds
         setInterval(() => {
             if (document.visibilityState !== 'visible') return;
             refreshMonitorDetails();
             refreshServerChartsForMode();
         }, 60000);
 
-        // Recompute relative timestamps every second for precise "x sec ago" display.
         setInterval(() => {
             if (document.visibilityState !== 'visible') return;
             updateRelativeTimes();

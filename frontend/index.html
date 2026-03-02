@@ -18,21 +18,19 @@
 
 <body>
     <div class="container">
-        <!-- Logo Header -->
+
         <div class="logo-header">
             <a href="https://t.me/HellFireDevil" target="_blank" rel="noopener noreferrer" title="Telegram">
                 <img src="{{STATUS_LOGO_URL}}" alt="Statrix">
             </a>
         </div>
 
-        <!-- Title Header -->
         <div class="title-header">
             <h1 id="page-title">{{STATUS_PAGE_TITLE}}</h1>
         </div>
 
-        <!-- Main Status Box -->
         <div class="status-box">
-            <!-- Toolbar -->
+
             <div class="toolbar">
                 <div class="toolbar-left">
                     <div class="view-toggle">
@@ -83,7 +81,6 @@
 
             <div class="status-warning-banner hidden" id="status-warning-banner" role="status" aria-live="polite"></div>
 
-            <!-- Status Table with Categories and Monitors -->
             <div class="status-table-wrapper">
                 <div id="monitors-container" class="monitor-groups">
                     <div class="loading">
@@ -92,7 +89,6 @@
                 </div>
             </div>
 
-            <!-- Bottom Navigation -->
             <div class="bottom-nav">
                 <button type="button" class="nav-btn" onclick="navigateHistory(-7)" id="btn-older-bottom">
                     <i class="fas fa-chevron-left"></i> Older
@@ -108,20 +104,17 @@
             </div>
         </div>
 
-        <!-- Footer -->
         <div class="footer">
             Powered by <a href="https://github.com/HellFireDevil18/Statrix" target="_blank" rel="noopener noreferrer">Statrix - Uptime Monitor</a>
         </div>
     </div>
 
     <script>
-        // Configuration
         const CONFIG = {
             refreshInterval: 60,
             historyDays: 7
         };
 
-        // State
         let allMonitors = [];
         let filteredMonitors = [];
         let historyOffset = 0;
@@ -133,7 +126,6 @@
         let _statusConsecutiveFailures = 0;
         let _lastSuccessfulStatusPayload = null;
 
-        // DOM Cache - cache frequently accessed elements to avoid repeated DOM queries
         const DOM = {
             searchInput: document.getElementById('search-input'),
             monitorsContainer: document.getElementById('monitors-container'),
@@ -167,7 +159,6 @@
             });
         }
 
-        // Load status page configuration (logo, etc.)
         async function loadConfig() {
             try {
                 const response = await fetch('/api/public/config');
@@ -189,7 +180,6 @@
                 }
             } catch (e) {
                 console.error('Failed to load config:', e);
-                // Fall back to default logo already in HTML
             }
         }
 
@@ -308,7 +298,6 @@
             }, delayMs);
         }
 
-        // View mode toggle
         function setViewMode(mode) {
             viewMode = mode;
             document.querySelectorAll('.view-toggle button').forEach(btn => btn.classList.remove('active'));
@@ -316,7 +305,6 @@
             renderMonitors(filteredMonitors);
         }
 
-        // Search functionality
         function doSearch() {
             const query = DOM.searchInput.value.toLowerCase().trim();
             if (query) {
@@ -333,7 +321,6 @@
             renderMonitors(filteredMonitors);
         }
 
-        // Debounce function to limit API calls on search input
         let searchTimeout;
         function debouncedSearch() {
             clearTimeout(searchTimeout);
@@ -342,9 +329,7 @@
             }, 300); // 300ms delay
         }
 
-        // Use debounced search for input events (triggered on every keystroke)
         DOM.searchInput.addEventListener('input', debouncedSearch);
-        // Immediate search on Enter key (user explicitly requested)
         DOM.searchInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 clearTimeout(searchTimeout);
@@ -352,10 +337,8 @@
             }
         });
 
-        // History navigation
         let _navLoading = false;
         function navigateHistory(offset) {
-            // Prevent rapid clicking while loading
             if (_navLoading) return;
 
             if (offset === 0) {
@@ -364,52 +347,45 @@
                 historyOffset += offset;
             }
 
-            // Prevent going into the future
             if (historyOffset > 0) historyOffset = 0;
 
             const isAtCurrent = historyOffset >= 0;
             DOM.btnNewer.disabled = isAtCurrent;
             DOM.btnNewerBottom.disabled = isAtCurrent;
 
-            // Show loading state (don't re-render old data with new dates)
-            DOM.monitorsContainer.innerHTML = 
+            DOM.monitorsContainer.innerHTML =
                 '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
-            
+
             _navLoading = true;
             loadStatus().finally(() => { _navLoading = false; });
         }
 
-        // Toggle category collapse
         function toggleCategory(categoryName) {
             const categoryId = categoryName.replace(/[^a-zA-Z0-9]/g, '_');
-            
+
             if (collapsedCategories.has(categoryName)) {
                 collapsedCategories.delete(categoryName);
             } else {
                 collapsedCategories.add(categoryName);
             }
-            
-            // Toggle the category header row
+
             const categoryRow = document.querySelector(`.category-card-header[data-category="${categoryId}"]`);
             if (categoryRow) {
                 categoryRow.classList.toggle('collapsed');
             }
-            
-            // Toggle all content rows for this category
+
             const contentRows = document.querySelectorAll(`.category-card-body[data-category-content="${categoryId}"]`);
             contentRows.forEach(row => {
                 row.classList.toggle('collapsed-row');
             });
         }
 
-        // Get current date headers (chronological: oldest → newest, left → right)
         function getDateHeaders() {
             const headers = [];
             const now = new Date();
             const todayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             todayLocal.setDate(todayLocal.getDate() + historyOffset);
 
-            // Build from oldest to newest (6 days ago → today)
             for (let i = 6; i >= 0; i--) {
                 const date = new Date(todayLocal);
                 date.setDate(date.getDate() - i);
@@ -419,7 +395,6 @@
             return headers;
         }
 
-        // Render monitors
         function renderMonitors(monitors) {
             const container = DOM.monitorsContainer;
 
@@ -444,7 +419,6 @@
 
             let html = '';
 
-            // Render categorized monitors (alphabetical order)
             for (const [category, categoryMonitors] of Object.entries(groups).sort(([a], [b]) => a.localeCompare(b))) {
                 const isCollapsed = collapsedCategories.has(category);
                 html += renderCategoryGroup(category, categoryMonitors, isCollapsed);
@@ -466,9 +440,7 @@
 
             let bodyHtml = '';
 
-            // Monitor rows
             if (viewMode === 'grid') {
-                // For grid view, we need a different approach - span full width
                 bodyHtml = `
                     <tr class="grid-container-row">
                         <td colspan="10">
@@ -479,7 +451,6 @@
                     </tr>
                 `;
             } else {
-                // Table view - each monitor is a row
                 for (const monitor of monitors) {
                     bodyHtml += renderMonitorRow(monitor);
                 }
@@ -523,11 +494,6 @@
             return `${gbps.toFixed(2)}Gbps`;
         }
 
-        function formatNetRate(bytesPerSec) {
-            const bps = (Number(bytesPerSec) || 0) * 8;
-            return formatBitsPerSec(bps);
-        }
-
         function formatDowntimeDuration(minutes) {
             const value = Number(minutes);
             if (!Number.isFinite(value) || value < 0) return null;
@@ -553,7 +519,6 @@
         }
 
         function buildServerQuickBars(metrics, status) {
-            // Don't show bars for down/unavailable monitors
             if (!metrics || status === 'down' || status === 'unknown' || status === 'no_data' || status === 'not_created') {
                 return '';
             }
@@ -569,7 +534,7 @@
             if (cpu == null && ram == null) return '';
 
             const pctWidth = (v) => Math.min(100, Math.max(0, v ?? 0));
-            
+
             function fmtNet(bytesPerSec) {
                 if (bytesPerSec == null || bytesPerSec === 0) return '0kbps';
                 const bps = bytesPerSec * 8;
@@ -579,19 +544,15 @@
                 return (bps / 1000000000).toFixed(2) + 'Gbps';
             }
 
-            // Tooltips
             const cpuTitle = `IOWait ${ioWait != null ? ioWait.toFixed(2) : '0.00'}%&#10;Steal ${steal != null ? steal.toFixed(2) : '0.00'}%&#10;CPU ${cpu != null ? cpu.toFixed(2) : '0.00'}%`;
             const ramTitle = `RAM: ${ram == null ? 'N/A' : ram.toFixed(2) + '%'}`;
             const diskTitle = `Disk: ${disk == null ? 'N/A' : disk.toFixed(2) + '%'}`;
             const netTitle = `Net in/out:&#10;${fmtNet(netIn)}&#10;${fmtNet(netOut)}`;
 
-            // Network bar: 2-color gradient (green=in, blue=out) using CSS gradient
-            // Scale to 100Mbps for visual width
             const inBps = (safeNumber(netIn) || 0) * 8;
             const outBps = (safeNumber(netOut) || 0) * 8;
             const totalBps = inBps + outBps;
             const totalPct = Math.min(100, Math.max(3, (totalBps / 100000000) * 100));
-            // Ratio of in vs out within the filled portion
             const inRatio = totalBps > 0 ? (inBps / totalBps) * 100 : 50;
 
             return `
@@ -621,7 +582,6 @@
                     : `/report.html?id=${m.id}&type=${m.type}`);
             const isPublic = normalizeBool(m.is_public) && !isMaintenance;
 
-            // Metrics / response info
             let metricsHtml = '';
             if (isServerAgent && m.metrics) {
                 metricsHtml = buildServerQuickBars(m.metrics, m.status);
@@ -630,7 +590,6 @@
                 metricsHtml = `<div class="response-time-label">Avg response: <span class="response-time-value">${rt} ms</span></div>`;
             }
 
-            // History dots (7)
             const history = m.history || Array(7).fill('unknown');
             const dateHeaders = getDateHeaders();
             let historyHtml = '';
@@ -673,7 +632,6 @@
                     dotIcon = 'times';
                     tooltip = `${dayLabel}: No data received`;
                 } else {
-                    // Does not render '?' markers for unknown days
                     historyHtml += `<div class="status-dot unknown"></div>`;
                     continue;
                 }
@@ -683,7 +641,6 @@
                 historyHtml += `<div class="status-dot ${dotClass}" ${tooltip ? `title="${tooltip}"` : ''}><i class="fas fa-${dotIcon}"></i></div>`;
             }
 
-            // Only show clickable link if monitor is public
             const nameDisplay = isPublic
                 ? `<a href="${reportUrl}">${m.name}</a>`
                 : `<span class="text-white">${m.name}</span>`;
@@ -720,15 +677,12 @@
                 ? m.uptime_percentage.toFixed(4)
                 : null;
 
-            // Get metrics for response bars
             const metrics = m.metrics || {};
             const showBars = isServerAgent && m.metrics;
             const responseTimeAvg = m.response_time_avg;
 
-            // Get history for daily status
             const history = m.history || Array(7).fill('unknown');
 
-            // Report URL
             const reportUrl = isServerAgent
                 ? `/report.html?id=${m.id}&type=heartbeat&heartbeat_type=server_agent`
                 : (m.type === 'heartbeat'
@@ -736,7 +690,6 @@
                     : `/report.html?id=${m.id}&type=${m.type}`);
             const isPublic = normalizeBool(m.is_public) && !isMaintenance;
 
-            // Build response bars HTML
             let barsHtml = '';
             if (showBars) {
                 barsHtml = buildServerQuickBars(metrics, m.status);
@@ -745,7 +698,6 @@
                 barsHtml = `<div class="response-time-label">Avg response: <span class="response-time-value">${rt} ms</span></div>`;
             }
 
-            // Build daily status cells with icons & tooltips
             const dateHeaders = getDateHeaders();
             let dailyStatusCells = '';
             for (let i = 0; i < 7; i++) {
@@ -758,7 +710,7 @@
                 let dotClass = '';
                 let dotIcon = '';
                 let tooltip = '';
-                
+
                 if (dayStatus === 'up') {
                     dotClass = '';
                     dotIcon = 'arrow-up';
@@ -780,17 +732,14 @@
                     dotIcon = 'arrow-up';
                     tooltip = customTooltip || `${dayLabel}: Maintenance`;
                 } else if (dayStatus === 'not_created') {
-                    // Gray X circle - monitor didn't exist yet
                     dotClass = 'not-created';
                     dotIcon = 'times';
                     tooltip = `${dayLabel}: Not monitored yet`;
                 } else if (dayStatus === 'no_data') {
-                    // Gray X circle - no data received
                     dotClass = 'no-data';
                     dotIcon = 'times';
                     tooltip = `${dayLabel}: No data received`;
                 } else {
-                    // Fallback: unknown = gray X
                     dotClass = 'unknown';
                     dotIcon = 'times';
                     tooltip = `${dayLabel}: Unknown`;
@@ -799,7 +748,7 @@
                 if (customTooltip) {
                     tooltip = customTooltip;
                 }
-                
+
                 dailyStatusCells += `
                     <td class="daily-col">
                         <div class="daily-status">
@@ -811,7 +760,6 @@
                 `;
             }
 
-            // Only show clickable link if monitor is public
             const nameDisplay = isPublic
                 ? `<a href="${reportUrl}"><strong>${m.name}</strong></a>`
                 : `<span class="text-white"><strong>${m.name}</strong></span>`;
@@ -843,41 +791,65 @@
             `;
         }
 
-        // Load status data
         async function loadStatus() {
             if (_statusLoading) return;
             _statusLoading = true;
             let requestTimeout = null;
-            // Add spinning animation to refresh icons and hide countdown
             document.querySelectorAll('.fa-sync-alt').forEach(icon => icon.classList.add('spinning'));
             document.querySelectorAll('.date-display .number').forEach(num => num.style.display = 'none');
-            
-            // Disable ALL navigation buttons during loading to prevent race conditions
+
             document.querySelectorAll('.date-display').forEach(btn => btn.disabled = true);
             document.querySelectorAll('.nav-btn').forEach(btn => btn.disabled = true);
-            
+
             try {
                 const params = new URLSearchParams();
                 if (historyOffset !== 0) {
                     params.set('offset', historyOffset);
                 }
                 params.set('tz_offset_minutes', String(-new Date().getTimezoneOffset()));
-                
+
                 const url = '/api/public/status' + (params.toString() ? '?' + params.toString() : '');
                 const controller = new AbortController();
-                requestTimeout = setTimeout(() => controller.abort(), 12000);
+                requestTimeout = setTimeout(() => controller.abort(), 25000);
                 const res = await fetchNoCache(url, { signal: controller.signal });
-                
+
                 if (!res.ok) throw new Error('Failed to load');
-                
+
                 const data = await res.json();
+                if (data && data.initializing) {
+                    _statusConsecutiveFailures = 0;
+                    const hasLastGood =
+                        _lastSuccessfulStatusPayload &&
+                        Array.isArray(_lastSuccessfulStatusPayload.monitors) &&
+                        _lastSuccessfulStatusPayload.monitors.length > 0;
+
+                    if (hasLastGood) {
+                        allMonitors = _lastSuccessfulStatusPayload.monitors || [];
+                        filteredMonitors = [...allMonitors];
+                        const lastUptime = (_lastSuccessfulStatusPayload.overall_uptime !== undefined && _lastSuccessfulStatusPayload.overall_uptime !== null)
+                            ? _lastSuccessfulStatusPayload.overall_uptime.toFixed(4) + '%'
+                            : '--%';
+                        DOM.overallUptime.textContent = lastUptime;
+                        renderStatusIncidents(_lastSuccessfulStatusPayload.status_incidents || []);
+                        renderMonitors(filteredMonitors);
+                        showStatusWarning('Status cache is initializing. Showing last known status while warming up...');
+                    } else {
+                        DOM.overallUptime.textContent = '--%';
+                        renderStatusIncidents(data.status_incidents || []);
+                        DOM.monitorsContainer.innerHTML =
+                            '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Initializing status cache...</div>';
+                        showStatusWarning('Status cache is initializing. Retrying automatically...');
+                    }
+                    scheduleStatusRetry(1500);
+                    return;
+                }
                 _lastSuccessfulStatusPayload = data;
                 _statusConsecutiveFailures = 0;
                 hideStatusWarning();
                 allMonitors = data.monitors || [];
                 filteredMonitors = [...allMonitors];
-                
-                const uptimeValue = (data.overall_uptime !== undefined && data.overall_uptime !== null) 
+
+                const uptimeValue = (data.overall_uptime !== undefined && data.overall_uptime !== null)
                     ? data.overall_uptime.toFixed(4) + '%'
                     : 'N/A';
                 DOM.overallUptime.textContent = uptimeValue;
@@ -911,7 +883,6 @@
                 syncCountdownDisplays(countdown);
                 document.querySelectorAll('.date-display').forEach(btn => btn.disabled = false);
 
-                // Re-enable nav buttons (respect Newer disabled state)
                 document.querySelectorAll('.nav-btn').forEach(btn => btn.disabled = false);
                 const isAtCurrent = historyOffset >= 0;
                 DOM.btnNewer.disabled = isAtCurrent;
@@ -922,7 +893,6 @@
             }
         }
 
-        // Auto-refresh countdown
         setInterval(() => {
             countdown--;
             if (countdown <= 0) {

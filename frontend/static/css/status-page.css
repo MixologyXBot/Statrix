@@ -1,10 +1,10 @@
-/* ==================== STATUS PAGE STYLES ==================== */
+/* This file is a part of Statrix */
+/* Coding : Priyanshu Dey [@HellFireDevil18] */
 
 .hidden {
     display: none;
 }
 
-/* Title Header */
 .title-header {
     background: linear-gradient(135deg, #1e2a38 0%, #253545 100%);
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -14,7 +14,6 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
-/* Desktop-only backdrop filter */
 @media (min-width: 769px) {
     .title-header {
         -webkit-backdrop-filter: blur(10px);
@@ -29,7 +28,6 @@
     margin: 0;
 }
 
-/* Main Content Box */
 .status-box {
     background: rgba(30, 40, 53, 0.7);
     border: 1px solid rgba(255, 255, 255, 0.12);
@@ -43,7 +41,6 @@
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Desktop-only backdrop filter */
 @media (min-width: 769px) {
     .status-box {
         -webkit-backdrop-filter: blur(20px);
@@ -61,7 +58,6 @@
     border-color: rgba(0, 212, 170, 0.3);
 }
 
-/* Toolbar */
 .toolbar {
     display: flex;
     justify-content: space-between;
@@ -164,7 +160,6 @@
     color: #fff;
 }
 
-/* Overall Uptime Badge */
 .toolbar-center {
     display: flex;
     align-items: center;
@@ -195,7 +190,6 @@
     color: var(--text-muted, #889097);
 }
 
-/* Date Navigation */
 .toolbar-right {
     display: flex;
     align-items: center;
@@ -271,7 +265,6 @@
     to { transform: rotate(360deg); }
 }
 
-/* Public Incident Notices */
 .status-incidents-card {
     margin: 0 0 18px;
     padding: 14px 14px 10px;
@@ -417,7 +410,6 @@
     gap: 4px;
 }
 
-/* Desktop optimization for Service Notices */
 @media (min-width: 901px) {
     .status-incidents-card {
         margin: 0 0 24px;
@@ -467,7 +459,6 @@
     }
 }
 
-/* Status Table */
 .status-table-wrapper {
     width: 100%;
     overflow-x: auto;
@@ -516,7 +507,6 @@
     min-width: 60px;
 }
 
-/* Category Group - table rows */
 .category-row {
     background: #253545;
     cursor: pointer;
@@ -556,7 +546,6 @@
     white-space: nowrap;
 }
 
-/* Safety: hide legacy counter badge if stale cached HTML still includes it */
 .category-count {
     display: none !important;
 }
@@ -581,7 +570,6 @@
     display: none;
 }
 
-/* Monitor Row - table cells */
 .status-table tbody tr.monitor-row {
     transition: background 0.2s;
 }
@@ -617,7 +605,6 @@
     text-align: center;
 }
 
-/* Status Icon - with enhanced glow */
 .status-icon {
     width: 28px;
     height: 28px;
@@ -655,7 +642,6 @@
     color: #9ca3af;
 }
 
-/* Monitor Info */
 .monitor-info {
     display: flex;
     flex-direction: column;
@@ -680,7 +666,6 @@
     text-decoration: underline;
 }
 
-/* Response Time Bars */
 .response-bars {
     display: flex;
     flex-direction: column;
@@ -707,22 +692,21 @@
 }
 
 .response-bar-fill.bar1 {
-    background: #44b6ae;  /* Green/teal for CPU */
+    background: #44b6ae;
 }
 
 .response-bar-fill.bar2 {
-    background: #5bc0de;  /* Blue for RAM */
+    background: #5bc0de;
 }
 
 .response-bar-fill.bar3 {
-    background: #f0ad4e;  /* Orange for Disk */
+    background: #f0ad4e;
 }
 
 .response-bar-fill.bar4 {
-    background: #5cb85c;  /* Green for Network */
+    background: #5cb85c;
 }
 
-/* Uptime Percentage */
 .uptime-cell {
     text-align: left;
 }
@@ -743,7 +727,6 @@
     text-align: left;
 }
 
-/* Daily Status */
 .daily-status {
     display: flex;
     justify-content: center;
@@ -791,7 +774,6 @@
     cursor: pointer;
 }
 
-/* Bottom Navigation */
 .bottom-nav {
     display: flex;
     justify-content: center;
@@ -801,7 +783,6 @@
     border-top: 1px solid #2d3a4a;
 }
 
-/* Grid container for table view */
 .grid-container-row td {
     padding: 0;
 }
@@ -810,7 +791,6 @@
     display: none;
 }
 
-/* Grid view */
 .monitor-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -922,7 +902,6 @@
     user-select: none;
 }
 
-/* Footer */
 .footer {
     text-align: center;
     padding: 30px 20px;
@@ -939,7 +918,6 @@
     text-decoration: underline;
 }
 
-/* Loading State */
 .loading {
     text-align: center;
     padding: 60px 20px;
@@ -959,7 +937,6 @@ td.loading {
     color: #ec6459;
 }
 
-/* Utility classes for JS template literals */
 .incident-pills {
     display: flex;
     align-items: center;
@@ -985,7 +962,6 @@ td.loading {
     color: #44b6ae;
 }
 
-/* Desktop scale-up: keep mobile unchanged */
 @media (min-width: 1200px) {
     body {
         font-size: 14.5px;
@@ -1070,7 +1046,6 @@ td.loading {
     }
 }
 
-/* Responsive */
 @media (max-width: 900px) {
     .container {
         padding: 15px;
@@ -1273,7 +1248,6 @@ td.loading {
         padding: 2px 7px;
     }
 
-    /* Hide date columns on mobile - both category headers and daily cells */
     .date-col,
     .daily-status {
         display: none;
@@ -1420,7 +1394,6 @@ td.loading {
         width: 104px;
     }
 
-    /* Category row compact */
     .category-row th,
     .category-row td {
         padding: 8px 8px;
@@ -1464,7 +1437,6 @@ td.loading {
         min-width: 80px;
     }
 
-    /* Grid view mobile optimizations */
     .monitor-grid {
         grid-template-columns: 1fr;
         gap: 10px;
@@ -1484,7 +1456,6 @@ td.loading {
         height: 18px;
     }
 
-    /* Table mobile alignment */
     .status-table-wrapper {
         overflow-x: hidden;
         margin: 0;
@@ -1518,7 +1489,6 @@ td.loading {
     }
 }
 
-/* Disable backdrop-filter on mobile to prevent glassy overlay during scroll */
 @media (max-width: 768px) {
     .title-header,
     .status-box {

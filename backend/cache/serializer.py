@@ -52,7 +52,13 @@ def loads(raw: Any) -> Any:
     if raw is None:
         return None
     if isinstance(raw, bytes):
-        raw = raw.decode("utf-8")
+        try:
+            raw = raw.decode("utf-8")
+        except Exception:
+            return None
     if isinstance(raw, str):
-        return json.loads(raw, object_hook=_object_hook)
+        try:
+            return json.loads(raw, object_hook=_object_hook)
+        except json.JSONDecodeError:
+            return None
     return raw

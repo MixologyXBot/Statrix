@@ -23,7 +23,7 @@
 
 <body class="dashboard-body">
     <div class="dashboard-container">
-        <!-- Sidebar -->
+
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <div class="sidebar-logo">
@@ -72,9 +72,8 @@
             </div>
         </aside>
 
-        <!-- Main Content -->
         <main class="dashboard-main">
-            <!-- Top Bar -->
+
             <header class="top-bar">
                 <div class="top-bar-left">
                     <button type="button" class="mobile-menu-btn" id="mobile-menu-btn" title="Toggle menu">
@@ -102,13 +101,12 @@
                 </div>
             </header>
 
-            <!-- Tab Content -->
             <div class="tab-content">
-                <!-- Overview Tab -->
+
                 <div class="tab-pane active" id="tab-overview">
-                    <!-- Stats Cards (Collapsible) -->
+
                     <div class="stats-container">
-                        <!-- Website Monitors -->
+
                         <a href="#uptime-monitors" class="stat-card stat-website">
                             <div class="stat-icon"><i class="fas fa-globe"></i></div>
                             <div class="stat-content">
@@ -118,7 +116,6 @@
                             </div>
                         </a>
 
-                        <!-- Heartbeat (Cronjob) -->
                         <a href="#uptime-monitors" class="stat-card stat-heartbeat-cron">
                             <div class="stat-icon"><i class="fas fa-heartbeat"></i></div>
                             <div class="stat-content">
@@ -128,7 +125,6 @@
                             </div>
                         </a>
 
-                        <!-- Heartbeat (Server Agent) -->
                         <a href="#uptime-monitors" class="stat-card stat-heartbeat-agent">
                             <div class="stat-icon"><i class="fas fa-server"></i></div>
                             <div class="stat-content">
@@ -139,11 +135,10 @@
                         </a>
                     </div>
 
-                    <!-- Dashboard Grid -->
                     <div class="dashboard-grid">
-                        <!-- Left Column: Account Overview -->
+
                         <div class="dashboard-left-column">
-                            <!-- Account Overview Panel -->
+
                             <div class="dashboard-panel account-overview-panel">
                                 <div class="panel-header">
                                     <i class="fas fa-id-card"></i>
@@ -176,9 +171,8 @@
 
                 </div>
 
-                <!-- Uptime Monitors Tab (Unified) -->
                 <div class="tab-pane" id="tab-uptime">
-                    <!-- Breadcrumb -->
+
                     <nav class="ht-breadcrumb">
                         <a href="#overview" data-tab="overview"><i class="fas fa-home"></i> Home</a>
                         <span class="ht-breadcrumb-sep">&gt;</span>
@@ -209,7 +203,6 @@
                         </div>
                     </div>
 
-                    <!-- Monitor Type Filter Tabs -->
                     <div class="monitor-type-tabs">
                         <button type="button" class="monitor-type-tab active" data-type="all" onclick="filterByType('all')">
                             <i class="fas fa-list"></i> All Monitors
@@ -225,7 +218,6 @@
                         </button>
                     </div>
 
-                    <!-- Toolbar -->
                     <div class="ht-toolbar">
                         <div class="ht-toolbar-left">
                             <div class="search-box">
@@ -235,7 +227,7 @@
                             <button type="button" class="ht-toolbar-icon-btn" onclick="clearSearch('uptime')" title="Clear"><i class="fas fa-times"></i></button>
                         </div>
                         <div class="ht-toolbar-right">
-                            <!-- Pagination at top -->
+
                             <span class="ht-toolbar-label">Page</span>
                             <button type="button" class="pagination-btn" onclick="paginationAction('uptime', 'prev')" title="Previous page"><i class="fas fa-angle-left"></i></button>
                             <input type="number" class="pagination-input" id="uptime-page-input-top" value="1" min="1" onchange="goToPage('uptime', this.value)" title="Page number">
@@ -256,7 +248,6 @@
                         </div>
                     </div>
 
-                    <!-- Filter Menu Dropdown -->
                     <div class="dropdown-menu dropdown-menu-end hidden" id="uptime-filter-menu">
                         <div class="dropdown-header">Filter By Status</div>
                         <label class="dropdown-item">
@@ -289,7 +280,6 @@
                         <button type="button" class="dropdown-item" onclick="resetFilters('uptime')">Reset Filters</button>
                     </div>
 
-                    <!-- Sort Menu Dropdown -->
                     <div class="dropdown-menu dropdown-menu-end hidden" id="uptime-sort-menu">
                         <div class="dropdown-header">Sort By</div>
                         <label class="dropdown-item">
@@ -329,7 +319,7 @@
                         </div>
                     </div>
                     <div class="pagination-wrapper" id="uptime-monitors-list-pagination">
-                        <!-- Pagination -->
+
                         <div class="statrix-pagination">
                             <div class="pagination-left">
                                 <span class="pagination-label">Page</span>
@@ -365,7 +355,6 @@
                     </div>
                 </div>
 
-                <!-- Incidents Tab -->
                 <div class="tab-pane" id="tab-incidents">
                     <div class="tab-header-enhanced">
                         <div class="tab-title-section">
@@ -388,7 +377,6 @@
                     </div>
                 </div>
 
-                <!-- Reports Tab -->
                 <div class="tab-pane" id="tab-reports">
                     <div class="tab-header-enhanced">
                         <div class="tab-title-section">
@@ -407,7 +395,6 @@
                         </div>
                     </div>
 
-                    <!-- Report Summary Cards -->
                     <div class="report-summary-grid">
                         <div class="report-card" id="report-uptime-card">
                             <div class="report-card-icon">
@@ -447,9 +434,8 @@
                         </div>
                     </div>
 
-                    <!-- Charts Grid -->
                     <div class="charts-grid">
-                        <!-- Uptime Chart -->
+
                         <div class="chart-container-large" id="uptime-chart-card">
                             <div class="chart-header">
                                 <h3><i class="fas fa-chart-line"></i> Uptime Percentage</h3>
@@ -464,7 +450,6 @@
                             </div>
                         </div>
 
-                        <!-- Response Time Chart -->
                         <div class="chart-container-large" id="response-chart-card">
                             <div class="chart-header">
                                 <h3><i class="fas fa-tachometer-alt"></i> Response Time</h3>
@@ -475,7 +460,6 @@
                         </div>
                     </div>
 
-                    <!-- Monitor Breakdown Table -->
                     <div class="report-section">
                         <div class="report-section-header">
                             <h3><i class="fas fa-list"></i> Monitor Breakdown</h3>
@@ -487,7 +471,6 @@
                         </div>
                     </div>
 
-                    <!-- Incident Timeline -->
                     <div class="report-section">
                         <div class="report-section-header">
                             <h3><i class="fas fa-history"></i> Incident Timeline</h3>
@@ -502,7 +485,6 @@
                     </div>
                 </div>
 
-                <!-- System Resources Tab -->
                 <div class="tab-pane" id="tab-system">
                     <div class="tab-header-enhanced">
                         <div class="tab-title-section">
@@ -517,7 +499,7 @@
                     </div>
 
                     <div class="settings-grid">
-                        <!-- Cache + Redis -->
+
                         <div class="settings-section">
                             <div class="settings-section-header">
                                 <i class="fas fa-database"></i>
@@ -588,7 +570,6 @@
                             </div>
                         </div>
 
-                        <!-- Process Info -->
                         <div class="settings-section">
                             <div class="settings-section-header">
                                 <i class="fas fa-microchip"></i>
@@ -626,7 +607,6 @@
                             </div>
                         </div>
 
-                        <!-- PostgreSQL -->
                         <div class="settings-section">
                             <div class="settings-section-header">
                                 <i class="fas fa-database"></i>
@@ -725,7 +705,6 @@
         </main>
     </div>
 
-    <!-- Modal Container -->
     <div class="modal-overlay" id="modal-overlay">
         <div class="modal" id="modal-container">
             <button type="button" class="modal-close" onclick="hideModal()" title="Close">×</button>

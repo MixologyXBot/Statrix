@@ -219,19 +219,16 @@ def _send_smtp(subject: str, html: str, inline_logo_bytes: bytes | None = None) 
     msg["From"] = settings.SMTP_FROM or settings.SMTP_USER
     msg["To"] = settings.NOTIFICATION_EMAIL
     msg["Subject"] = subject
-    msg.set_content("View this email in an HTML-capable client.")
-    msg.add_alternative(html, subtype="html")
+    msg.set_content(html, subtype="html")
     if inline_logo_bytes:
-        html_part = msg.get_body(preferencelist=("html",))
-        if html_part is not None:
-            html_part.add_related(
-                inline_logo_bytes,
-                maintype="image",
-                subtype="png",
-                cid=f"<{_FAVICON_CID}>",
-                filename="favicon.png",
-                disposition="inline",
-            )
+        msg.add_related(
+            inline_logo_bytes,
+            maintype="image",
+            subtype="png",
+            cid=f"<{_FAVICON_CID}>",
+            filename="favicon.png",
+            disposition="inline",
+        )
 
     with smtplib.SMTP(settings.SMTP_SERVER, settings.SMTP_PORT) as server:
         server.ehlo()

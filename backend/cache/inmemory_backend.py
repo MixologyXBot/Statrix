@@ -4,7 +4,7 @@
 from collections import defaultdict
 from typing import Any
 
-from .base import CacheBackend, SnapshotLoader
+from .base import CacheBackend, SnapshotLoader, coerce_series_score
 
 
 class InMemoryCacheBackend(CacheBackend):
@@ -46,6 +46,11 @@ class InMemoryCacheBackend(CacheBackend):
                 for k, rows in (groups or {}).items()
             }
 
+    def _series_key(self, series_kind: str, monitor_id: str, monitor_type: str | None = None) -> str:
+        if series_kind == "maintenance_events" and monitor_type:
+            return f"{monitor_type}:{monitor_id}"
+        return str(monitor_id)
+
     async def get_entity(self, kind: str, entity_id: str) -> dict[str, Any] | None:
         item = self.entities.get(kind, {}).get(str(entity_id))
         return dict(item) if item else None
@@ -77,11 +82,8 @@ class InMemoryCacheBackend(CacheBackend):
         score: float,
         monitor_type: str | None = None,
     ) -> None:
-        _ = score
-        series_key = str(monitor_id)
-        if series_kind == "maintenance_events" and monitor_type:
-            series_key = f"{monitor_type}:{monitor_id}"
-        self.series[series_kind][series_key].append(dict(item))
+        key = self._series_key(series_kind, monitor_id, monitor_type)
+        self.series[series_kind][key].append(dict(item))
 
     async def range_series(
         self,
@@ -92,14 +94,98 @@ class InMemoryCacheBackend(CacheBackend):
         limit: int | None = None,
         monitor_type: str | None = None,
     ) -> list[dict[str, Any]]:
-        _ = (start_score, end_score)
-        series_key = str(monitor_id)
-        if series_kind == "maintenance_events" and monitor_type:
-            series_key = f"{monitor_type}:{monitor_id}"
-        rows = [dict(v) for v in self.series.get(series_kind, {}).get(series_key, [])]
+        key = self._series_key(series_kind, monitor_id, monitor_type)
+        rows = self.series.get(series_kind, {}).get(key, [])
+        filtered = []
+        for row in rows:
+            s = coerce_series_score(row, series_kind)
+            if start_score <= s <= end_score:
+                filtered.append(dict(row))
+        filtered.sort(key=lambda r: coerce_series_score(r, series_kind))
         if limit is not None and limit > 0:
-            return rows[-limit:]
-        return rows
+            filtered = filtered[:limit]
+        return filtered
+
+    async def tail_series(
+        self,
+        series_kind: str,
+        monitor_id: str,
+        count: int,
+        monitor_type: str | None = None,
+    ) -> list[dict[str, Any]]:
+        key = self._series_key(series_kind, monitor_id, monitor_type)
+        rows = self.series.get(series_kind, {}).get(key, [])
+        sorted_rows = sorted(rows, key=lambda r: coerce_series_score(r, series_kind), reverse=True)
+        return [dict(r) for r in sorted_rows[:count]]
+
+    async def delete_series_group(
+        self,
+        series_kind: str,
+        monitor_id: str,
+        monitor_type: str | None = None,
+    ) -> None:
+        key = self._series_key(series_kind, monitor_id, monitor_type)
+        self.series.get(series_kind, {}).pop(key, None)
+
+    async def delete_series_range(
+        self,
+        series_kind: str,
+        monitor_id: str,
+        max_score: float,
+        monitor_type: str | None = None,
+    ) -> int:
+        key = self._series_key(series_kind, monitor_id, monitor_type)
+        items = self.series.get(series_kind, {}).get(key, [])
+        keep = []
+        removed = 0
+        for row in items:
+            s = coerce_series_score(row, series_kind)
+            if s <= max_score:
+                removed += 1
+            else:
+                keep.append(row)
+        if series_kind in self.series and key in self.series[series_kind]:
+            self.series[series_kind][key] = keep
+        return removed
+
+    async def update_series_item(
+        self,
+        series_kind: str,
+        monitor_id: str,
+        item: dict[str, Any],
+        score: float,
+        monitor_type: str | None = None,
+    ) -> None:
+        key = self._series_key(series_kind, monitor_id, monitor_type)
+        items = self.series[series_kind][key]
+        # For monitor_minutes, match by minute field; for others, match by id
+        if series_kind == "monitor_minutes":
+            target_minute = item.get("minute")
+            for i, existing in enumerate(items):
+                if existing.get("minute") == target_minute:
+                    items[i] = dict(item)
+                    return
+        else:
+            target_id = item.get("id")
+            if target_id is not None:
+                for i, existing in enumerate(items):
+                    if existing.get("id") == target_id:
+                        items[i] = dict(item)
+                        return
+        items.append(dict(item))
+
+    async def write_series_kind(
+        self,
+        series_kind: str,
+        grouped: dict,
+    ) -> int:
+        count = 0
+        for k, rows in (grouped or {}).items():
+            self.series[series_kind][str(k)].extend(
+                dict(row) for row in (rows or [])
+            )
+            count += len(rows or [])
+        return count
 
     async def rebuild_from_db(self, loader_fn: SnapshotLoader) -> None:
         snapshot = await loader_fn()
@@ -133,7 +219,6 @@ class InMemoryCacheBackend(CacheBackend):
         payload: dict[str, Any],
         ttl_seconds: int | None = None,
     ) -> None:
-        _ = ttl_seconds
         self.meta[str(key)] = dict(payload)
 
     async def delete_key(self, key: str) -> None:

@@ -345,18 +345,16 @@
 </head>
 
 <body>
-    <!-- Starfield -->
+
     <div class="starfield" id="starfield"></div>
 
-    <!-- Main Content -->
     <div class="container">
-        <!-- Astronaut with glow -->
+
         <div class="astronaut-container">
             <div class="astronaut-glow"></div>
             <img src="/static/images/404.png" alt="404 - Astronaut" class="astronaut-image">
         </div>
 
-        <!-- Text Content -->
         <div class="content" id="content">
             <h1 class="title" id="title">Page Not Found</h1>
             <p class="subtitle" id="subtitle">The page you're looking for doesn't exist</p>
@@ -365,7 +363,6 @@
                 Please check the URL and try again.
             </p>
 
-            <!-- Action Button -->
             <div class="buttons">
                 <a href="/" class="btn btn-primary">
                     <i class="fas fa-home"></i>
@@ -375,13 +372,11 @@
         </div>
     </div>
 
-    <!-- Footer -->
     <div class="footer">
         Powered by <a href="https://github.com/HellFireDevil18/Statrix" target="_blank" rel="noopener noreferrer">Statrix</a> - Uptime Monitor
     </div>
 
     <script>
-        // Generate random stars with pulsing animation
         function createStars() {
             const starfield = document.getElementById('starfield');
             const starCount = 100; // Number of stars
@@ -390,14 +385,11 @@
                 const star = document.createElement('div');
                 star.className = 'star';
 
-                // Random position
                 const x = Math.random() * 100;
                 const y = Math.random() * 100;
 
-                // Random size (smaller stars for subtlety)
                 const size = Math.random() * 3 + 1;
 
-                // Random animation delay for natural pulsing
                 const delay = Math.random() * 3;
                 const duration = Math.random() * 2 + 2; // 2-4 seconds
 
@@ -412,43 +404,36 @@
             }
         }
 
-        // Set context-aware 404 message based on URL
         function set404Message() {
             const urlParams = new URLSearchParams(window.location.search);
             const reason = urlParams.get('reason');
-            
+
             const titleEl = document.getElementById('title');
             const subtitleEl = document.getElementById('subtitle');
             const messageEl = document.getElementById('message');
 
             if (reason === 'maintenance') {
-                // Maintenance mode message
                 titleEl.textContent = 'Monitor Report Not Available';
                 subtitleEl.textContent = 'This monitor is under maintenance';
                 messageEl.textContent = 'The detailed report for this monitor is temporarily unavailable while it is in maintenance mode. Please check back later.';
             } else if (reason === 'private') {
-                // Private monitor message
                 titleEl.textContent = 'Monitor Report Not Available';
                 subtitleEl.textContent = 'This monitor\'s report is set to private';
                 messageEl.textContent = 'The detailed report for this monitor has been set to private by the administrator. Only public monitors can be viewed on this status page.';
             } else if (reason === 'unavailable') {
-                // Ambiguous 404 for monitor details
                 titleEl.textContent = 'Monitor Report Unavailable';
                 subtitleEl.textContent = 'The report is private, missing, or not yet synced';
                 messageEl.textContent = 'This monitor report cannot be loaded right now. It may be private, deleted, or still propagating. Please refresh and try again shortly.';
             } else {
-                // Generic 404 message (default)
                 titleEl.textContent = 'Page Not Found';
                 subtitleEl.textContent = 'The page you\'re looking for doesn\'t exist';
                 messageEl.textContent = 'The page you are trying to access may have been moved, deleted, or never existed. Please check the URL and try again.';
             }
         }
 
-        // Initialize on page load
         createStars();
         set404Message();
 
-        // Optional: Add parallax effect on mouse move (desktop only)
         if (window.matchMedia('(min-width: 769px)').matches) {
             document.addEventListener('mousemove', (e) => {
                 const mouseX = e.clientX / window.innerWidth;
@@ -463,7 +448,6 @@
             });
         }
 
-        // Optional: Gyroscope effect on mobile (if available)
         if (window.DeviceOrientationEvent && window.matchMedia('(max-width: 768px)').matches) {
             window.addEventListener('deviceorientation', (e) => {
                 const astronaut = document.querySelector('.astronaut-container');

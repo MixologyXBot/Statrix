@@ -1,6 +1,6 @@
-/* ==================== TABLE COLUMNS ==================== */
+/* This file is a part of Statrix */
+/* Coding : Priyanshu Dey [@HellFireDevil18] */
 
-/* Table Column Styles */
 .data-table th.col-up-down {
     width: 120px;
 }
@@ -28,7 +28,6 @@
     color: var(--text-muted);
 }
 
-/* Up/Down Status Column */
 .col-up-down .fas.fa-sort {
     font-size: 0.7rem;
     margin-left: 4px;
@@ -40,7 +39,6 @@
     color: var(--primary);
 }
 
-/* Enhanced Uptime Cell */
 .uptime-cell-content {
     display: flex;
     flex-direction: column;
@@ -59,7 +57,6 @@
     gap: 2px;
 }
 
-/* Monitor Name Info */
 .monitor-name-info {
     display: flex;
     flex-direction: column;
@@ -82,14 +79,12 @@
     word-break: break-all;
 }
 
-/* Server Metrics Inline */
 .server-metrics-inline {
     display: flex;
     gap: 4px;
     margin-top: 4px;
 }
 
-/* Status Badge Inline */
 .status-badge-inline {
     display: inline-block;
     padding: 4px 12px;
@@ -115,7 +110,6 @@
     color: #7f8c8d;
 }
 
-/* Type Badge */
 .type-badge {
     display: inline-block;
     padding: 4px 12px;
@@ -126,7 +120,6 @@
     font-weight: 500;
 }
 
-/* Action Buttons */
 .action-buttons {
     display: flex;
     gap: 4px;
@@ -159,14 +152,13 @@
     color: #e74c3c;
 }
 
-/* Responsive Table */
 @media (max-width: 1200px) {
     .data-table th.col-up-down,
     .data-table th.col-added,
     .data-table th.col-check {
         display: none;
     }
-    
+
     .data-table td.col-up-down,
     .data-table td.col-added,
     .data-table td.col-check {
@@ -179,7 +171,7 @@
     .data-table th.col-status {
         display: none;
     }
-    
+
     .data-table td.col-type,
     .data-table td.col-status {
         display: none;

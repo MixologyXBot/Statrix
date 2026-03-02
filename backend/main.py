@@ -9,6 +9,7 @@ from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
+import asyncio
 import logging
 import os
 
@@ -18,8 +19,14 @@ from .cache import CacheUnavailableError
 from .auth import get_password_hash
 from .dependencies import get_current_admin
 from .background.monitor_loop import start_monitor_loop, stop_monitor_loop
+from .status_summary import status_summary_service
 
-logging.basicConfig(level=logging.INFO)
+_LOG_LEVEL_NAME = str(getattr(settings, "LOG_LEVEL", "INFO") or "INFO").upper()
+_LOG_LEVEL = getattr(logging, _LOG_LEVEL_NAME, logging.INFO)
+logging.basicConfig(level=_LOG_LEVEL)
+logging.getLogger().setLevel(_LOG_LEVEL)
+if not bool(getattr(settings, "UVICORN_ACCESS_LOG", False)):
+    logging.getLogger("uvicorn.access").disabled = True
 logger = logging.getLogger(__name__)
 
 NO_CACHE_HEADERS = {
@@ -37,6 +44,37 @@ class NoCacheStaticFiles(StaticFiles):
         if response.status_code == 200 and path.endswith(NO_CACHE_EXTENSIONS):
             response.headers.update(NO_CACHE_HEADERS)
         return response
+
+
+_WARMUP_MAX_RETRIES = 3
+_WARMUP_RETRY_DELAY_SECONDS = 10
+
+
+async def _background_cache_warmup() -> None:
+    db.cache_warming_up = True
+    try:
+        await asyncio.sleep(1)
+        for attempt in range(1, _WARMUP_MAX_RETRIES + 1):
+            try:
+                logger.info("Background cache warmup attempt %d/%d", attempt, _WARMUP_MAX_RETRIES)
+                await db.load_cache()
+                logger.info("Background cache warmup succeeded (attempt %d)", attempt)
+                return
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                logger.exception(
+                    "Background cache warmup attempt %d/%d failed", attempt, _WARMUP_MAX_RETRIES
+                )
+                if attempt < _WARMUP_MAX_RETRIES:
+                    await asyncio.sleep(_WARMUP_RETRY_DELAY_SECONDS)
+
+        logger.error(
+            "Background cache warmup exhausted %d retries; relying on periodic rebuild job",
+            _WARMUP_MAX_RETRIES,
+        )
+    finally:
+        db.cache_warming_up = False
 
 
 @asynccontextmanager
@@ -69,7 +107,7 @@ async def lifespan(app: FastAPI):
         except ValueError:
             logger.warning("Invalid WEB_CONCURRENCY=%r; defaulting to 1", raw_web_concurrency)
 
-    cache_requested = settings.ENABLE_IN_MEMORY_CACHE or settings.CACHE_ONLY or settings.CACHE_BACKEND == "redis"
+    cache_requested = settings.CACHE_BACKEND in ("redis", "inmemory") or settings.CACHE_ONLY
     if cache_requested and web_concurrency > 1 and not settings.MONITOR_LEADER_LOCK_ENABLED:
         logger.warning(
             "WEB_CONCURRENCY=%s with leader lock disabled may cause stale monitor data. "
@@ -80,16 +118,23 @@ async def lifespan(app: FastAPI):
     if cache_requested:
         try:
             await db.ensure_cache_available()
-            await db.load_cache()
-            logger.info(
-                "Cache loaded (backend=%s, ENABLE_IN_MEMORY_CACHE=%s, CACHE_ONLY=%s)",
-                db.cache_backend_name,
-                settings.ENABLE_IN_MEMORY_CACHE,
-                db.cache_only,
-            )
+            logger.info("Cache backend available (backend=%s)", db.cache_backend_name)
         except Exception as exc:
-            logger.exception("Failed to load cache; aborting startup")
-            raise RuntimeError("Failed to load cache during startup") from exc
+            logger.exception("Failed to verify cache backend; aborting startup")
+            raise RuntimeError("Failed to verify cache backend during startup") from exc
+
+        if settings.CACHE_ONLY:
+            try:
+                await db.load_cache()
+                logger.info("Cache loaded synchronously (CACHE_ONLY mode)")
+            except Exception as exc:
+                logger.exception("Failed to load cache in CACHE_ONLY mode; aborting")
+                raise RuntimeError("Failed to load cache (CACHE_ONLY)") from exc
+        else:
+            app.state.cache_warmup_task = asyncio.create_task(
+                _background_cache_warmup()
+            )
+            logger.info("Background cache warmup scheduled")
     else:
         logger.info("Cache disabled")
 
@@ -105,13 +150,40 @@ async def lifespan(app: FastAPI):
     else:
         logger.info("Owner user exists: %s", settings.OWNER_EMAIL)
 
+    if settings.STATUS_SUMMARY_ENABLED:
+        try:
+            await status_summary_service.start(db)
+            status_summary_service.schedule_delayed_warmup(
+                db,
+                delay_seconds=settings.STATUS_SUMMARY_WARMUP_DELAY_SECONDS,
+            )
+            logger.info(
+                "Status summary service enabled (delay=%ss, flush=%ss)",
+                settings.STATUS_SUMMARY_WARMUP_DELAY_SECONDS,
+                settings.STATUS_SUMMARY_FLUSH_INTERVAL_SECONDS,
+            )
+        except Exception:
+            logger.exception("Failed to initialize status summary service")
+
     start_monitor_loop()
     logger.info("Monitor loop started")
+    logger.info("Statrix has started")
 
     yield
 
     logger.info("Shutting down Statrix...")
     stop_monitor_loop()
+    warmup_task = getattr(app.state, "cache_warmup_task", None)
+    if warmup_task and not warmup_task.done():
+        warmup_task.cancel()
+        try:
+            await warmup_task
+        except asyncio.CancelledError:
+            pass
+    try:
+        await status_summary_service.stop()
+    except Exception:
+        logger.exception("Failed to stop status summary service cleanly")
     await db.close()
     logger.info("Database connection closed")
 
@@ -163,6 +235,12 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 @app.get("/health")
 async def health_check():
+    if db.cache_warming_up:
+        return {
+            "status": "warming_up",
+            "app": settings.APP_NAME,
+            "cache": {"warming_up": True},
+        }
     cache_stats = await db.get_cache_stats()
     backend_name = cache_stats.get("backend")
     healthy = cache_stats.get("healthy", True)
@@ -184,6 +262,12 @@ async def cache_fail_fast_guard(request: Request, call_next):
         or path.startswith("/v2/")
         or path.startswith("/win/")
     )
+    # Public status endpoints must always be reachable — they have their own
+    # stale-cache / PG fallback path and should never be blocked by cache health.
+    if path.startswith("/api/public/"):
+        guarded_path = False
+    if db.cache_warming_up:
+        guarded_path = False
     if guarded_path and settings.CACHE_FAIL_FAST and db.cache_service:
         try:
             await db.ensure_cache_available()
@@ -340,5 +424,7 @@ if __name__ == "__main__":
         "backend.main:app",
         host="0.0.0.0",
         port=8000,
-        reload=True
+        reload=True,
+        access_log=bool(getattr(settings, "UVICORN_ACCESS_LOG", False)),
+        log_level=str(getattr(settings, "LOG_LEVEL", "info")).lower(),
     )

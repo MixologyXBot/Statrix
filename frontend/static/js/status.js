@@ -58,7 +58,6 @@ function updateIncidentsBanner(data) {
 }
 
 function generateUptimeBar(uptimePercentage) {
-    // Generate 30 segments (each representing ~3 days)
     const segments = 30;
     const upSegments = Math.round((uptimePercentage / 100) * segments);
 

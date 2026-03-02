@@ -67,6 +67,10 @@ services:
         port: 8000
     health_check:
       http_path: /health
+      grace_period: 30
+      interval: 30
+      timeout: 10
+      restart_limit: 5
     instance_type:
       name: nano
       regions:

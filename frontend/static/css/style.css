@@ -1,5 +1,8 @@
+/* This file is a part of Statrix */
+/* Coding : Priyanshu Dey [@HellFireDevil18] */
+
 :root {
-    /* Vibrant Modern Palette (2026) - Rich & Dynamic */
+
     --primary: #00d4aa;
     --primary-hover: #00e5ba;
     --primary-light: rgba(0, 212, 170, 0.2);
@@ -12,7 +15,6 @@
     --accent-orange: #f97316;
     --accent-yellow: #eab308;
 
-    /* Backgrounds */
     --bg-sidebar: linear-gradient(180deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%);
     --bg-sidebar-header: #14181c;
     --bg-main: linear-gradient(135deg, #0a0a14 0%, #12121f 50%, #0d0d1a 100%);
@@ -26,39 +28,33 @@
     --bg-hover: rgba(0, 0, 0, 0.2);
     --bg-active: rgba(0, 0, 0, 0.3);
 
-    /* Glassmorphism */
     --glass-bg: rgba(26, 26, 46, 0.6);
     --glass-bg-light: rgba(26, 26, 46, 0.4);
     --glass-border: rgba(255, 255, 255, 0.1);
     --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 
-    /* Text */
     --text-main: #ffffff;
     --text-muted: #94a3b8;
     --text-secondary: #cbd5e1;
     --text-light: #aab2b9;
     --text-invert: #ffffff;
 
-    /* Borders */
     --border-color: rgba(255, 255, 255, 0.1);
     --border-light: rgba(255, 255, 255, 0.12);
     --border-solid: #38414a;
 
-    /* Status */
     --status-up: #10b981;
     --status-down: #ef4444;
     --status-warn: #f59e0b;
     --status-error: #ec6459;
     --status-warning: #f3c200;
 
-    /* Border Radius */
     --radius-xs: 4px;
     --radius-sm: 8px;
     --radius-md: 12px;
     --radius-lg: 16px;
     --radius-xl: 20px;
 
-    /* Shadows */
     --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.15);
     --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.2);
     --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.3);
@@ -66,7 +62,6 @@
     --shadow-glow-primary: 0 0 40px rgba(0, 212, 170, 0.4);
     --shadow-glow-purple: 0 0 40px rgba(168, 85, 247, 0.4);
 
-    /* Typography Scale */
     --font-size-xs: 0.75rem;
     --font-size-sm: 0.8125rem;
     --font-size-base: 0.875rem;
@@ -76,7 +71,6 @@
     --font-size-2xl: 1.5rem;
     --font-size-3xl: 2rem;
 
-    /* Spacing Scale */
     --space-xs: 0.25rem;
     --space-sm: 0.5rem;
     --space-md: 0.75rem;
@@ -85,7 +79,6 @@
     --space-2xl: 2rem;
     --space-3xl: 3rem;
 
-    /* Transitions */
     --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-fast: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-slow: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
@@ -119,7 +112,6 @@ body {
     100% { background-position: 0% 50%; }
 }
 
-/* Fix mobile scrolling glassy overlay issue */
 @supports (-webkit-touch-callout: none) {
     body {
         background-attachment: scroll;
@@ -133,7 +125,6 @@ body.dashboard-body {
     line-height: 1.5;
 }
 
-/* Scrollbar */
 ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
@@ -155,16 +146,14 @@ body.dashboard-body {
     background-clip: padding-box;
 }
 
-/* Layout */
 .dashboard-container {
     display: flex;
     min-height: 100vh;
 }
 
-/* Sidebar - Enhanced with vibrant gradients and animations */
 .sidebar {
     width: 220px;
-    background: 
+    background:
         linear-gradient(180deg, rgba(15, 15, 26, 0.95) 0%, rgba(26, 26, 46, 0.95) 100%),
         linear-gradient(45deg, rgba(0, 212, 170, 0.05) 0%, transparent 100%);
     -webkit-backdrop-filter: blur(20px);
@@ -176,7 +165,7 @@ body.dashboard-body {
     height: 100vh;
     z-index: 50;
     transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 
+    box-shadow:
         inset -1px 0 0 rgba(255, 255, 255, 0.05),
         0 0 40px rgba(0, 212, 170, 0.05);
     overflow-x: hidden;
@@ -279,7 +268,7 @@ body.dashboard-body {
     object-fit: cover;
     border-radius: 50%;
     border: 1.5px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 
+    box-shadow:
         0 2px 6px rgba(0, 0, 0, 0.1),
         0 1px 3px rgba(0, 0, 0, 0.08);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -287,7 +276,7 @@ body.dashboard-body {
 
 .sidebar-logo .logo-img:hover {
     transform: scale(1.08);
-    box-shadow: 
+    box-shadow:
         0 3px 8px rgba(0, 0, 0, 0.15),
         0 2px 4px rgba(0, 0, 0, 0.12);
 }
@@ -430,7 +419,6 @@ body.dashboard-body {
     background-color: rgba(255, 255, 255, 0.05);
 }
 
-/* Main Content */
 .dashboard-main {
     flex: 1;
     margin-left: 220px;
@@ -445,7 +433,6 @@ body.dashboard-body {
     margin-left: 50px;
 }
 
-/* Top Bar with Glassmorphism */
 .top-bar {
     height: 56px;
     padding: 0 1.25rem;
@@ -479,7 +466,7 @@ body.dashboard-body {
 .top-bar-logo img {
     border-radius: 50%;
     border: 1.5px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 
+    box-shadow:
         0 2px 6px rgba(0, 0, 0, 0.1),
         0 1px 3px rgba(0, 0, 0, 0.08);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -487,7 +474,7 @@ body.dashboard-body {
 
 .top-bar-logo img:hover {
     transform: scale(1.08);
-    box-shadow: 
+    box-shadow:
         0 3px 8px rgba(0, 0, 0, 0.15),
         0 2px 4px rgba(0, 0, 0, 0.12);
 }
@@ -553,7 +540,6 @@ body.dashboard-body {
     text-align: center;
 }
 
-/* User Dropdown */
 .user-dropdown {
     position: relative;
 }
@@ -685,7 +671,6 @@ body.dashboard-body {
     color: #fff;
 }
 
-/* Buttons */
 .btn {
     display: inline-flex;
     align-items: center;
@@ -802,7 +787,6 @@ body.dashboard-body {
     display: none;
 }
 
-/* Tab Content */
 .tab-content {
     flex: 1;
     padding: 1.75rem;
@@ -830,7 +814,6 @@ body.dashboard-body {
     }
 }
 
-/* Modern 2026 Animations */
 @keyframes slideInFromLeft {
     from {
         opacity: 0;
@@ -891,7 +874,6 @@ body.dashboard-body {
     }
 }
 
-/* Grid & Cards */
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -944,7 +926,6 @@ body.dashboard-body {
     color: var(--status-down);
 }
 
-/* Enhanced Stats Grid */
 .stats-grid-enhanced {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -1067,7 +1048,6 @@ body.dashboard-body {
     color: #fff;
 }
 
-/* Dashboard Grid */
 .dashboard-grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -1088,7 +1068,6 @@ body.dashboard-body {
     }
 }
 
-/* Dashboard Panels */
 .dashboard-panel {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
@@ -1116,7 +1095,6 @@ body.dashboard-body {
     padding: 1.25rem;
 }
 
-/* Account Overview */
 .account-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -1147,7 +1125,6 @@ body.dashboard-body {
     font-weight: 700;
 }
 
-/* Quick Actions */
 .quick-actions-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -1181,7 +1158,6 @@ body.dashboard-body {
     color: var(--primary);
 }
 
-/* Recent Monitors Section */
 .recent-monitors-section {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
@@ -1212,7 +1188,6 @@ body.dashboard-body {
     color: var(--primary);
 }
 
-/* Panel Placeholder */
 .panel-placeholder {
     display: flex;
     flex-direction: column;
@@ -1240,7 +1215,6 @@ body.dashboard-body {
     font-size: 0.9rem;
 }
 
-/* Tables & Lists */
 .tab-header {
     display: flex;
     justify-content: space-between;
@@ -1248,7 +1222,6 @@ body.dashboard-body {
     margin-bottom: 1.5rem;
 }
 
-/* Enhanced Tab Header */
 .tab-header-enhanced {
     display: flex;
     justify-content: space-between;
@@ -1278,7 +1251,6 @@ body.dashboard-body {
     flex-wrap: wrap;
 }
 
-/* Table Toolbar */
 .table-toolbar {
     display: flex;
     align-items: center;
@@ -1347,7 +1319,6 @@ body.dashboard-body {
     color: var(--text-muted);
 }
 
-/* Dropdown */
 .dropdown {
     position: relative;
 }
@@ -1358,7 +1329,6 @@ body.dashboard-body {
     gap: 6px;
 }
 
-/* Monitors Table Container */
 .monitors-table-container {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
@@ -1366,7 +1336,6 @@ body.dashboard-body {
     overflow: visible;
 }
 
-/* Settings Grid */
 .settings-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
@@ -1440,7 +1409,6 @@ body.dashboard-body {
     padding: 0.5rem 0;
 }
 
-/* Mobile Responsive */
 @media (max-width: 768px) {
     .sidebar {
         transform: translateX(-100%);
@@ -1495,7 +1463,6 @@ body.dashboard-body {
     overflow: hidden;
 }
 
-/* Data Table */
 .data-table {
     width: 100%;
     border-collapse: collapse;
@@ -1569,7 +1536,6 @@ body.dashboard-body {
     padding-right: 20px;
 }
 
-/* Monitor Status Dot */
 .monitor-status-dot {
     display: inline-block;
     width: 10px;
@@ -1588,7 +1554,6 @@ body.dashboard-body {
     box-shadow: 0 0 6px var(--status-down);
 }
 
-/* Monitor Name Info */
 .monitor-name-info {
     display: flex;
     flex-direction: column;
@@ -1707,7 +1672,6 @@ body.dashboard-body {
     white-space: nowrap;
 }
 
-/* Uptime Cell */
 .uptime-cell-content {
     display: flex;
     flex-direction: column;
@@ -1720,7 +1684,6 @@ body.dashboard-body {
     font-size: 0.9rem;
 }
 
-/* Mini Uptime Bar */
 .mini-uptime-bar {
     display: flex;
     gap: 2px;
@@ -1743,7 +1706,6 @@ body.dashboard-body {
     background: var(--status-down);
 }
 
-/* Type Badge */
 .type-badge {
     display: inline-block;
     padding: 4px 8px;
@@ -1756,7 +1718,6 @@ body.dashboard-body {
     color: var(--text-muted);
 }
 
-/* Status Badge Inline */
 .status-badge-inline {
     display: inline-block;
     padding: 4px 10px;
@@ -1784,7 +1745,6 @@ body.dashboard-body {
     border: 1px solid rgba(136, 144, 151, 0.3);
 }
 
-/* Action Buttons */
 .action-buttons {
     display: flex;
     gap: 4px;
@@ -1973,7 +1933,6 @@ body.dashboard-body {
     border: none;
 }
 
-/* Forms */
 .form-group {
     margin-bottom: 1.5rem;
 }
@@ -2008,7 +1967,6 @@ body.dashboard-body {
     box-shadow: 0 0 0 3px rgba(0, 212, 170, 0.15), 0 0 16px rgba(0, 212, 170, 0.1);
 }
 
-/* Modal */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -2116,7 +2074,6 @@ body.dashboard-body {
     }
 }
 
-/* Server Details Modal */
 .modal.modal-server-details {
     max-width: 1120px;
     width: min(96vw, 1120px);
@@ -2530,7 +2487,6 @@ body.dashboard-body {
     color: #fff;
 }
 
-/* Server Agent Command Modal */
 .modal.modal-agent-command {
     max-width: 720px;
     width: min(94vw, 720px);
@@ -2676,7 +2632,6 @@ body.dashboard-body {
     }
 }
 
-/* Loading */
 .loading-state {
     padding: 3rem;
     display: flex;
@@ -2707,7 +2662,6 @@ body.dashboard-body {
     font-size: 0.9rem;
 }
 
-/* Utility */
 .text-muted {
     color: var(--text-muted);
 }
@@ -3026,9 +2980,6 @@ body.dashboard-body {
     vertical-align: middle;
 }
 
-/* ==================== PHASE 2: ENHANCED MONITOR MANAGEMENT STYLES ==================== */
-
-/* Checkbox Styles */
 .checkbox-wrapper {
     display: inline-flex;
     align-items: center;
@@ -3074,7 +3025,6 @@ body.dashboard-body {
     transform: rotate(45deg);
 }
 
-/* Toolbar Left Section */
 .toolbar-left {
     display: flex;
     align-items: center;
@@ -3082,7 +3032,6 @@ body.dashboard-body {
     flex: 1;
 }
 
-/* Bulk Actions Bar */
 .bulk-actions-bar {
     background: rgba(68, 182, 174, 0.1);
     border: 1px solid var(--primary);
@@ -3099,7 +3048,6 @@ body.dashboard-body {
     flex-wrap: wrap;
 }
 
-/* Enhanced Dropdown Menus */
 .dropdown-menu {
     position: absolute;
     background: var(--bg-card);
@@ -3164,7 +3112,6 @@ body.dashboard-body {
     margin: 0.5rem 0;
 }
 
-/* Monitor Row with Checkbox */
 .monitor-row-with-checkbox {
     display: flex;
     align-items: center;
@@ -3182,7 +3129,6 @@ body.dashboard-body {
     background: rgba(68, 182, 174, 0.08);
 }
 
-/* Selected Counter Styling */
 #uptime-selected,
 #server-selected,
 #heartbeat-selected {
@@ -3190,7 +3136,6 @@ body.dashboard-body {
     font-weight: 600;
 }
 
-/* Danger Button */
 .btn-danger {
     background-color: var(--status-down);
     color: #fff;
@@ -3200,7 +3145,6 @@ body.dashboard-body {
     background-color: #c0392b;
 }
 
-/* Monitor Table with Checkbox Column */
 .monitors-data-table {
     width: 100%;
     border-collapse: collapse;
@@ -3239,12 +3183,10 @@ body.dashboard-body {
     vertical-align: middle;
 }
 
-/* Column Visibility */
 .col-hidden {
     display: none !important;
 }
 
-/* Sort Indicators */
 .sort-indicator {
     margin-left: 0.5rem;
     font-size: 0.7rem;
@@ -3256,9 +3198,6 @@ body.dashboard-body {
     color: var(--primary);
 }
 
-/* ==================== PHASE 7: UI POLISH STYLES ==================== */
-
-/* Enhanced Toast Notifications */
 .toast-notification {
     position: fixed;
     bottom: 2rem;
@@ -3345,7 +3284,6 @@ body.dashboard-body {
     color: #fff;
 }
 
-/* Confirm Dialog Enhancements */
 .modal.modal-sm {
     max-width: 450px;
 }
@@ -3362,7 +3300,6 @@ body.dashboard-body {
     margin: 0;
 }
 
-/* Enhanced Loading States */
 .loading-state {
     display: flex;
     justify-content: center;
@@ -3391,7 +3328,6 @@ body.dashboard-body {
     border-width: 2px;
 }
 
-/* Loading Skeleton */
 .skeleton {
     background: linear-gradient(
         90deg,
@@ -3436,7 +3372,6 @@ body.dashboard-body {
     border-radius: 50%;
 }
 
-/* Enhanced Button Styles */
 .btn {
     transition: all 0.2s ease;
     font-weight: 600;
@@ -3469,7 +3404,6 @@ body.dashboard-body {
     transition-duration: 0.1s;
 }
 
-/* Empty State Improvements */
 .no-data-state {
     text-align: center;
     padding: 4rem 2rem;
@@ -3493,7 +3427,6 @@ body.dashboard-body {
     font-size: 0.9rem;
 }
 
-/* Status Badge Enhancements */
 .status-badge {
     display: inline-flex;
     align-items: center;
@@ -3524,7 +3457,6 @@ body.dashboard-body {
     border: 1px solid rgba(136, 144, 151, 0.3);
 }
 
-/* Stagger Fade-In Animation */
 @keyframes fadeSlideUp {
     from { opacity: 0; transform: translateY(12px); }
     to   { opacity: 1; transform: translateY(0); }
@@ -3538,7 +3470,6 @@ body.dashboard-body {
 .stats-container .stat-card:nth-child(3) { animation: fadeSlideUp 0.4s 0.1s ease both; }
 .stat-card:nth-child(4) { animation: fadeSlideUp 0.4s 0.15s ease both; }
 
-/* Status Badge Pulse */
 .status-badge-inline.status-up::before,
 .status-badge.status-up::before {
     content: '';
@@ -3555,7 +3486,6 @@ body.dashboard-body {
     50% { opacity: 0.5; transform: scale(0.8); }
 }
 
-/* Monitor Status Dot Pulse */
 .monitor-status-dot.up,
 .status-dot.up {
     animation: dotPulse 2.5s ease-in-out infinite;
@@ -3566,12 +3496,10 @@ body.dashboard-body {
     50% { box-shadow: 0 0 12px currentColor; }
 }
 
-/* Dashboard Panel Polish */
 .dashboard-panel {
     border-radius: var(--radius-md);
 }
 
-/* Responsive Improvements */
 @media (max-width: 768px) {
     .toast-notification {
         left: 1rem;
@@ -3594,7 +3522,6 @@ body.dashboard-body {
     }
 }
 
-/* Smooth Scrolling */
 html {
     font-size: 15px;
     scroll-behavior: smooth;
@@ -3606,7 +3533,6 @@ html {
     }
 }
 
-/* Focus Visible for Accessibility */
 .btn:focus-visible,
 input:focus-visible,
 select:focus-visible,
@@ -3616,7 +3542,6 @@ button:focus-visible {
     outline-offset: 2px;
 }
 
-/* Transition for All Interactive Elements */
 a,
 button,
 .btn,
@@ -3626,7 +3551,6 @@ button,
     transition: all 0.2s ease;
 }
 
-/* Better Text Selection */
 ::selection {
     background: var(--primary);
     color: #fff;
@@ -3637,9 +3561,6 @@ button,
     color: #fff;
 }
 
-/* ==================== ENHANCED SETTINGS PAGE STYLES ==================== */
-
-/* Settings Item with Actions */
 .settings-item-content {
     flex: 1;
     display: flex;
@@ -3651,7 +3572,6 @@ button,
     flex-shrink: 0;
 }
 
-/* Toggle Switch */
 .toggle-switch {
     position: relative;
     display: inline-block;
@@ -3697,7 +3617,6 @@ button,
     transform: translateX(24px);
 }
 
-/* API Keys List */
 .api-keys-list {
     display: flex;
     flex-direction: column;
@@ -3743,7 +3662,6 @@ button,
     gap: 0.5rem;
 }
 
-/* Plan Info */
 .plan-info {
     display: flex;
     justify-content: space-between;
@@ -3800,7 +3718,6 @@ button,
     color: var(--status-up);
 }
 
-/* Danger Zone Section */
 .settings-section-danger {
     border-color: rgba(236, 100, 89, 0.3);
 }
@@ -3818,7 +3735,6 @@ button,
     color: var(--status-down);
 }
 
-/* Text Success Color */
 .text-success {
     color: var(--status-up);
 }
@@ -3835,7 +3751,6 @@ button,
     color: var(--text-muted);
 }
 
-/* Responsive Settings Grid */
 @media (max-width: 768px) {
     .settings-grid {
         grid-template-columns: 1fr;
@@ -3859,14 +3774,11 @@ button,
     }
 }
 
-/* ==================== MULTI-STEP WIZARD MODAL STYLES ==================== */
-
 .modal-lg {
     max-width: 800px;
     width: 90vw;
 }
 
-/* Wizard Steps */
 .wizard-steps {
     display: flex;
     align-items: center;
@@ -3941,7 +3853,6 @@ button,
     background: var(--primary);
 }
 
-/* Wizard Body */
 .wizard-body {
     min-height: 400px;
     padding: 2rem;
@@ -3956,7 +3867,6 @@ button,
     display: block;
 }
 
-/* Monitor Type Selection Grid */
 .monitor-type-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -4018,7 +3928,6 @@ button,
     line-height: 1.4;
 }
 
-/* Form Validation */
 .form-group.error input,
 .form-group.error select,
 .form-group.error textarea {
@@ -4042,7 +3951,6 @@ button,
     margin-top: 0.5rem;
 }
 
-/* Review Section */
 .review-section {
     background: rgba(0, 0, 0, 0.2);
     border: 1px solid var(--border-color);
@@ -4083,7 +3991,6 @@ button,
     text-align: right;
 }
 
-/* Test Configuration Button */
 .btn-test {
     background: linear-gradient(135deg, #6d2d7d 0%, #4a1e5a 100%);
     border: none;
@@ -4104,7 +4011,6 @@ button,
     animation: spin 1s linear infinite;
 }
 
-/* Test Result */
 .test-result {
     padding: 1rem;
     border-radius: var(--radius-sm);
@@ -4147,16 +4053,12 @@ button,
     color: var(--text-muted);
 }
 
-/* ==================== REPORTS PAGE STYLES ==================== */
-
-/* Date Range Selector */
 #tab-reports .date-range-selector select {
     min-width: 150px;
     height: 38px;
     border-radius: var(--radius-sm);
 }
 
-/* Report Summary Grid */
 .report-summary-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
@@ -4176,7 +4078,6 @@ button,
     }
 }
 
-/* Report Card */
 .report-card {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
@@ -4226,7 +4127,6 @@ button,
     margin-top: 0.35rem;
 }
 
-/* Charts Grid */
 .charts-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
@@ -4298,7 +4198,6 @@ button,
     font-size: 0.85rem;
 }
 
-/* Report Section */
 .report-section {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
@@ -4323,7 +4222,6 @@ button,
     gap: 0.5rem;
 }
 
-/* Report Table */
 .report-table-container {
     padding: 0;
 }
@@ -4363,7 +4261,6 @@ button,
     border-bottom: none;
 }
 
-/* Incident Timeline */
 .incident-timeline {
     padding: 1rem;
 }
@@ -4442,7 +4339,6 @@ button,
     font-size: 0.8rem;
 }
 
-/* Reports-only toolbar tuning */
 #tab-reports .tab-header-enhanced {
     margin-bottom: 1rem;
 }
@@ -4458,7 +4354,6 @@ button,
     height: 38px;
 }
 
-/* Uptime Bar in Reports */
 .uptime-bar-container {
     width: 120px;
     height: 6px;
@@ -4474,9 +4369,6 @@ button,
     transition: width 0.3s ease;
 }
 
-/* ==================== PHASE 1: ENHANCED OVERVIEW STYLES ==================== */
-
-/* Overall Uptime Banner */
 .overall-uptime-banner {
     background: linear-gradient(135deg, #2d7d6d 0%, #1e5a4d 100%);
     border-radius: var(--radius-sm);
@@ -4519,7 +4411,6 @@ button,
     font-size: 0.85rem;
 }
 
-/* Secondary Stats Row */
 .stats-row-secondary {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -4571,7 +4462,6 @@ button,
     color: var(--status-down);
 }
 
-/* Chart Panel */
 .chart-panel {
     min-height: 320px;
 }
@@ -4627,7 +4517,6 @@ button,
     max-height: 100%;
 }
 
-/* Activity Feed */
 .activity-feed {
     display: flex;
     flex-direction: column;
@@ -4696,7 +4585,6 @@ button,
     font-size: 0.75rem;
 }
 
-/* Enhanced Quick Actions Grid */
 .quick-actions-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -4737,7 +4625,6 @@ button,
     color: var(--primary);
 }
 
-/* Server & Heartbeat Stat Cards (already have base styles from uptime/incidents) */
 .stat-card-enhanced.stat-server {
     background: linear-gradient(135deg, #2d6a7d 0%, #1e4a5a 100%);
 }
@@ -4746,7 +4633,6 @@ button,
     background: linear-gradient(135deg, #6d2d7d 0%, #4a1e5a 100%);
 }
 
-/* Stats grid enhanced - now with 4 columns */
 .stats-grid-enhanced {
     display: grid;
     grid-template-columns: repeat(4, 1fr);

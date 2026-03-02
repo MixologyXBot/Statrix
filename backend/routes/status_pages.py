@@ -10,6 +10,7 @@ import uuid
 
 from ..database import db
 from ..config import settings
+from ..status_summary import status_summary_service
 from ..utils.time import utcnow
 from ..utils.monitors import (
     is_placeholder_monitor_id,
@@ -24,10 +25,59 @@ logger = logging.getLogger(__name__)
 _status_cache_fallback: dict = {}
 _CACHE_TTL = max(0, int(getattr(settings, "PUBLIC_STATUS_CACHE_TTL_SECONDS", 10) or 0))
 _PARTIAL_DOWNTIME_MINUTES = 15.0
+_SUMMARY_COLD_WAIT_SECONDS = max(
+    0,
+    int(getattr(settings, "STATUS_SUMMARY_COLD_WAIT_SECONDS", 5) or 5),
+)
+_RETENTION_HOURS = max(
+    24,
+    int(getattr(settings, "DATA_RETENTION_DAYS", 7) or 7) * 24,
+)
 
 
 def _get_cache_key(offset: int, sla_range: str | None) -> str:
     return f"{offset}_{sla_range or 'none'}"
+
+
+def _summary_fast_path_enabled(offset: int, sla_range: "SlaRange | None") -> bool:
+    if not bool(getattr(settings, "STATUS_SUMMARY_ENABLED", False)):
+        return False
+    if offset != 0:
+        return False
+    if sla_range is not None:
+        return False
+    return True
+
+
+def _initializing_status_payload() -> dict:
+    return {
+        "overall_uptime": None,
+        "monitors": [],
+        "incidents": [],
+        "status_incidents": [],
+        "status": "operational",
+        "initializing": True,
+    }
+
+
+def _select_server_history_interval(hours: int) -> str:
+    """Choose history rollup interval based on retention policy."""
+    if hours > _RETENTION_HOURS:
+        return "day"
+    if hours > 72:
+        return "hour"
+    if hours > 12:
+        return "15min"
+    return "raw"
+
+
+async def _build_summary_public_status_payload() -> dict | None:
+    summary_payload = await status_summary_service.build_monitor_payload(offset=0, sla_range=None)
+    if not summary_payload:
+        return None
+    enriched = await _refresh_incident_fields(summary_payload)
+    enriched["initializing"] = False
+    return enriched
 
 
 async def _get_cached_status(cache_key: str) -> dict | None:
@@ -39,7 +89,6 @@ async def _get_cached_status(cache_key: str) -> dict | None:
             if cached is not None:
                 return cached
         except Exception as exc:
-            await db.mark_cache_unhealthy(f"status cache read failed: {exc}")
             logger.warning("Failed to read status cache from backend: %s", exc)
     if cache_key in _status_cache_fallback:
         entry = _status_cache_fallback[cache_key]
@@ -57,8 +106,7 @@ async def _set_cached_status(cache_key: str, data: dict) -> None:
         try:
             await db.cache_service.set_status_live(cache_key, data, _CACHE_TTL)
         except Exception as exc:
-            await db.mark_cache_unhealthy(f"status cache write failed: {exc}")
-            raise
+            logger.warning("Failed to write status cache: %s", exc)
 
 
 async def _get_stale_cached_status(cache_key: str) -> dict | None:
@@ -68,17 +116,26 @@ async def _get_stale_cached_status(cache_key: str) -> dict | None:
             if stale is not None:
                 return stale
         except Exception as exc:
-            await db.mark_cache_unhealthy(f"stale status cache read failed: {exc}")
             logger.warning("Failed to read stale status cache from backend: %s", exc)
     entry = _status_cache_fallback.get(cache_key)
     return entry.get("data") if entry else None
 
 
 _background_tasks: set[asyncio.Task] = set()
+_status_refresh_tasks: dict[str, asyncio.Task] = {}
+
+
+def _track_background_task(task: asyncio.Task) -> None:
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
 
 
 def invalidate_status_cache() -> None:
-    _status_cache_fallback.clear()
+    # Expire live in-process cache immediately but keep payload for stale fallback.
+    if _status_cache_fallback and _CACHE_TTL > 0:
+        expired_at = utcnow() - timedelta(seconds=_CACHE_TTL + 1)
+        for entry in _status_cache_fallback.values():
+            entry["timestamp"] = expired_at
     if not db.cache_service:
         return
     try:
@@ -86,8 +143,7 @@ def invalidate_status_cache() -> None:
     except RuntimeError:
         return
     task = loop.create_task(db.cache_service.invalidate_status_cache())
-    _background_tasks.add(task)
-    task.add_done_callback(_background_tasks.discard)
+    _track_background_task(task)
 
 
 class SlaRange(str, Enum):
@@ -291,8 +347,108 @@ async def _refresh_cached_monitor_flags(payload: dict) -> dict:
         refreshed_monitors.append(item)
 
     refreshed = dict(payload)
-    refreshed["monitors"] = refreshed_monitors
+    refreshed["monitors"] = sorted(
+        refreshed_monitors,
+        key=lambda m: (
+            (m.get("category") or "").lower(),
+            (m.get("name") or "").lower(),
+        ),
+    )
     return refreshed
+
+
+async def _build_public_status_payload(
+    offset: int,
+    tz_offset_minutes: int,
+    sla_range: SlaRange | None,
+) -> dict:
+    sla_start: datetime | None = None
+    sla_end: datetime | None = None
+    if sla_range:
+        sla_start, sla_end = _get_sla_window(sla_range)
+
+    uptime_monitors, server_monitors, heartbeat_monitors, incidents, status_incidents = await asyncio.gather(
+        db.get_uptime_monitors(enabled_only=True),
+        db.get_server_monitors(enabled_only=True),
+        db.get_heartbeat_monitors(enabled_only=True),
+        db.get_open_incidents(),
+        db.get_public_status_incidents(resolved_retention_hours=48),
+        return_exceptions=False
+    )
+
+    uptime_tasks = [_process_uptime_monitor(m, sla_start, sla_end, offset, tz_offset_minutes) for m in uptime_monitors]
+    server_tasks = [_process_server_monitor(m, sla_start, sla_end, offset, tz_offset_minutes) for m in server_monitors]
+    heartbeat_tasks = [
+        _process_heartbeat_monitor(
+            m,
+            sla_start,
+            sla_end,
+            offset=offset,
+            tz_offset_minutes=tz_offset_minutes,
+        )
+        for m in heartbeat_monitors
+    ]
+
+    all_tasks = uptime_tasks + server_tasks + heartbeat_tasks
+    processed_monitors = await asyncio.gather(*all_tasks, return_exceptions=False)
+
+    monitors = sorted(
+        processed_monitors,
+        key=lambda m: (
+            (m.get("category") or "").lower(),
+            (m.get("name") or "").lower(),
+        ),
+    )
+    uptime_values = [m["uptime_percentage"] for m in monitors if m["uptime_percentage"] is not None]
+
+    incident_data, status_incident_data = await asyncio.gather(
+        _format_incident_payloads(incidents, include_resolved_retention=False),
+        _format_incident_payloads(status_incidents, include_resolved_retention=True),
+        return_exceptions=False
+    )
+    overall_status = _determine_overall_status(incidents)
+    overall_uptime = round(sum(uptime_values) / len(uptime_values), 4) if uptime_values else None
+
+    return {
+        "overall_uptime": overall_uptime,
+        "monitors": monitors,
+        "incidents": incident_data,
+        "status_incidents": status_incident_data,
+        "status": overall_status
+    }
+
+
+def _schedule_status_refresh(
+    cache_key: str,
+    *,
+    offset: int,
+    tz_offset_minutes: int,
+    sla_range: SlaRange | None,
+) -> None:
+    active = _status_refresh_tasks.get(cache_key)
+    if active and not active.done():
+        return
+
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        return
+
+    async def _refresh_task() -> None:
+        started_at = utcnow()
+        try:
+            result = await _build_public_status_payload(offset, tz_offset_minutes, sla_range)
+            await _set_cached_status(cache_key, result)
+            elapsed = (utcnow() - started_at).total_seconds()
+            logger.debug("Background status cache refresh complete key=%s duration=%.3fs", cache_key, elapsed)
+        except Exception as exc:
+            logger.warning("Background status cache refresh failed key=%s: %s", cache_key, exc)
+        finally:
+            _status_refresh_tasks.pop(cache_key, None)
+
+    task = loop.create_task(_refresh_task())
+    _status_refresh_tasks[cache_key] = task
+    _track_background_task(task)
 
 
 @router.get("/status")
@@ -302,6 +458,43 @@ async def get_public_status(
     sla_range: SlaRange | None = Query(None, description="SLA uptime preset (affects uptime % calculations)")
 ):
     cache_key = _get_cache_key(offset, sla_range.value if sla_range else None)
+    if _summary_fast_path_enabled(offset, sla_range):
+        try:
+            payload = await _build_summary_public_status_payload()
+            if payload is not None:
+                await _set_cached_status(cache_key, payload)
+                return payload
+
+            ready = await status_summary_service.ensure_ready(
+                db,
+                wait_timeout_seconds=_SUMMARY_COLD_WAIT_SECONDS,
+            )
+            if ready:
+                payload = await _build_summary_public_status_payload()
+                if payload is not None:
+                    await _set_cached_status(cache_key, payload)
+                    return payload
+
+            stale_data = await _get_stale_cached_status(cache_key)
+            if stale_data is not None:
+                try:
+                    refreshed = await _refresh_incident_fields(stale_data)
+                    refreshed["initializing"] = False
+                    return refreshed
+                except Exception as exc:
+                    logger.warning("Failed to refresh stale status payload fields: %s", exc)
+                    stale_data["initializing"] = False
+                    return stale_data
+
+            return _initializing_status_payload()
+        except Exception as exc:
+            logger.warning("Summary fast-path failed; trying stale payload: %s", exc)
+            stale_data = await _get_stale_cached_status(cache_key)
+            if stale_data is not None:
+                stale_data["initializing"] = False
+                return stale_data
+            return _initializing_status_payload()
+
     cached_data = await _get_cached_status(cache_key)
     if cached_data is not None:
         try:
@@ -312,59 +505,26 @@ async def get_public_status(
             logger.warning("Failed to refresh cached incident fields: %s", exc)
             return cached_data
 
+    stale_data = await _get_stale_cached_status(cache_key)
+    if stale_data is not None:
+        _schedule_status_refresh(
+            cache_key,
+            offset=offset,
+            tz_offset_minutes=tz_offset_minutes,
+            sla_range=sla_range,
+        )
+        try:
+            refreshed = await _refresh_incident_fields(stale_data)
+            refreshed = await _refresh_cached_monitor_flags(refreshed)
+            return refreshed
+        except Exception as exc:
+            logger.warning("Failed to refresh stale status payload fields: %s", exc)
+            return stale_data
+
     try:
-        sla_start: datetime | None = None
-        sla_end: datetime | None = None
-        if sla_range:
-            sla_start, sla_end = _get_sla_window(sla_range)
-
-        uptime_monitors, server_monitors, heartbeat_monitors, incidents, status_incidents = await asyncio.gather(
-            db.get_uptime_monitors(enabled_only=True),
-            db.get_server_monitors(enabled_only=True),
-            db.get_heartbeat_monitors(enabled_only=True),
-            db.get_open_incidents(),
-            db.get_public_status_incidents(resolved_retention_hours=48),
-            return_exceptions=False
-        )
-
-        uptime_tasks = [_process_uptime_monitor(m, sla_start, sla_end, offset, tz_offset_minutes) for m in uptime_monitors]
-        server_tasks = [_process_server_monitor(m, sla_start, sla_end, offset, tz_offset_minutes) for m in server_monitors]
-        heartbeat_tasks = [
-            _process_heartbeat_monitor(
-                m,
-                sla_start,
-                sla_end,
-                offset=offset,
-                tz_offset_minutes=tz_offset_minutes,
-            )
-            for m in heartbeat_monitors
-        ]
-
-        all_tasks = uptime_tasks + server_tasks + heartbeat_tasks
-        processed_monitors = await asyncio.gather(*all_tasks, return_exceptions=False)
-
-        monitors = list(processed_monitors)
-        uptime_values = [m["uptime_percentage"] for m in monitors if m["uptime_percentage"] is not None]
-
-        incident_data, status_incident_data = await asyncio.gather(
-            _format_incident_payloads(incidents, include_resolved_retention=False),
-            _format_incident_payloads(status_incidents, include_resolved_retention=True),
-            return_exceptions=False
-        )
-        overall_status = _determine_overall_status(incidents)
-        overall_uptime = round(sum(uptime_values) / len(uptime_values), 4) if uptime_values else None
-
-        result = {
-            "overall_uptime": overall_uptime,
-            "monitors": monitors,
-            "incidents": incident_data,
-            "status_incidents": status_incident_data,
-            "status": overall_status
-        }
-
+        result = await _build_public_status_payload(offset, tz_offset_minutes, sla_range)
         await _set_cached_status(cache_key, result)
         return result
-
     except Exception as e:
         stale_data = await _get_stale_cached_status(cache_key)
         if stale_data is not None:
@@ -816,11 +976,12 @@ async def get_public_heartbeat_server_agent_history(
                 raise HTTPException(status_code=400, detail="start must be before end")
             history = await db.get_server_history_range(monitor_uuid, start, end)
         else:
-            if hours > 720:
+            interval = _select_server_history_interval(hours)
+            if interval == "day":
                 history = await db.get_server_history_aggregated(monitor_uuid, hours=hours, interval='day')
-            elif hours > 72:
+            elif interval == "hour":
                 history = await db.get_server_history_aggregated(monitor_uuid, hours=hours, interval='hour')
-            elif hours > 12:
+            elif interval == "15min":
                 history = await db.get_server_history_aggregated(monitor_uuid, hours=hours, interval='15min')
             else:
                 history = await db.get_server_history(monitor_uuid, hours=hours)
